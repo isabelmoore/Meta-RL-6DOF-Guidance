@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 def scale_between(a, a_min, a_max):
     # input between min and max
     # return scaled value between -1 and 1  

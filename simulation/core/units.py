@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 def f2m(x):
     # feet to meters 
     return x*0.3048

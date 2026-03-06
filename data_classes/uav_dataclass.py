@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 from dataclasses import dataclass
 
 @dataclass
@@ -56,27 +57,3 @@ class UAVPerformance:
     target_lost_below_alt: float
     lost_count: float
     effective_radius: float
-
-@dataclass
-class UAVVisualization:
-    # Body geometry (meters)
-    length: float = 6.25
-    body_radius: float = 0.155
-    cg_offset: float = 3.13
-    nose_length: float = 0.94
-    # Tail fin geometry
-    fin_root_offset: float = 5.5
-    fin_span: float = 0.63
-    fin_sweep: float = 0.18
-    fin_tip_chord_ratio: float = 0.55
-    fin_thickness: float = 0.008
-    # Wing geometry
-    wing_cg_offset: float = 2.0
-    wing_chord: float = 0.7
-    wing_span: float = 0.40
-    wing_sweep: float = 0.35
-    wing_tip_chord_ratio: float = 0.3
-    # GIF rendering
-    n_frames: int = 120
-    body_color: str = '#a8c4d8'
-    fin_color: str = '#90b0c4'

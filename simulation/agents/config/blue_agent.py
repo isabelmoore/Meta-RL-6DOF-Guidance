@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 from data_classes.agent_dataclass import Agent_parameters
 from simulation.core.config_loader import ConfigLoader
 

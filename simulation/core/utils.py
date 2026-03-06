@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 import numpy as np
 import geopy
 from geopy.distance import geodesic

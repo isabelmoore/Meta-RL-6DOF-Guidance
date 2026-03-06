@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 from simulation.models.aircraft import Aircraft
 from simulation.models.uavs import UAV
 import numpy as np

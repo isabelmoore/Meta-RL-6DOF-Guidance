@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 import numpy as np
 from simulation.models.fdm_object import FDMObject
 from simulation.core.guidance_laws import PN

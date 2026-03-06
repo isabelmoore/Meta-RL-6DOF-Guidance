@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 """
 Meta-RL (RL²) wrapper around UAVGuidanceEnv.
 

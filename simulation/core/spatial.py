@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 
 import numpy as np
 geodesic = pyproj.Geod(ellps='WGS84')

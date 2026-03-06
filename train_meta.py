@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 """
 Usage:
     python train_meta.py --scenarios A B C

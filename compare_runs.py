@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 """Compare evaluation metrics across all training runs."""
 
 import json

@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 import py_trees as pt 
 from jsb_gym.bts.reactive_seq import ReactiveSeq
 from jsb_gym.utils.geospatial import dinstance_between_agents, bearing_between_agents, to_360, relative_bearing_between_agents

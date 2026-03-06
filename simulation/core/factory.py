@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 
 from simulation.core.autopilot import UAVPIDAutopilot, AircraftPIDAutopilot
 from simulation.core.guidance_laws import PN

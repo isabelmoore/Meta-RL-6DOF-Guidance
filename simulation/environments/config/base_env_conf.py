@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 tacview_output_dir = 'data_output/tacview'
 
 observation_shape = (40, 15)

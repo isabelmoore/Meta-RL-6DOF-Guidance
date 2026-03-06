@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 """
 Usage:
     python evaluate_meta.py --run training_logs/Feb22_META_A_B_C_20M

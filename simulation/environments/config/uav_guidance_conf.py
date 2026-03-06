@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 from data_classes.uav_guidance_dataclass import (
     UAVGuidanceInitialConditions,
     UAVGuidancePathConstraints,

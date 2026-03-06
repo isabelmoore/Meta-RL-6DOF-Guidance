@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 import jsbsim
 import numpy as np
 from simulation.core.units import m2f, f2m, lbs2kg

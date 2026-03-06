@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 import yaml
 import sys
 import os
@@ -8,7 +9,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 
 from data_classes import uav_dataclass as MDC
 from data_classes import aircraft_dataclass as ADC
-from data_classes.uav_dataclass import UAVVisualization
 
 class ConfigLoader:
     @staticmethod
@@ -79,10 +79,6 @@ class UAVConfig:
             lost_count=perf_data.get('lost_count', 3),
             effective_radius=perf_data.get('effective_radius', 300.0)
         )
-
-        # Visualization (optional, defaults to AIM-7 dimensions)
-        viz_data = data.get('visualization', {})
-        self.visualization = UAVVisualization(**viz_data)
 
 class AircraftConfig:
     def __init__(self, data):

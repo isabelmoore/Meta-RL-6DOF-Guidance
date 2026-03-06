@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 from simulation.core.autopilot import AircraftPIDAutopilot
 from simulation.models.fdm_object import FDMObject
 from simulation.core.navigation import delta_heading

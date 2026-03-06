@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 # vim:fenc=utf-8
 #
 # Author: Ozer Ozkahraman (ozkahramanozer@gmail.com)

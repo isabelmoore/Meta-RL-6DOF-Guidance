@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Isabel Moore. All rights reserved.
 
 def roll_circle_clip(roll_delta):
     if roll_delta > 180.0:
