@@ -1,0 +1,7 @@
+# Behavior: straight — holds initial heading and altitude, no evasion
+maneuver_type: "straight"
+maneuver_interval_min: 999.0
+maneuver_interval_max: 999.0
+heading_change_max: 0.0
+alt_change_max: 0.0
+throttle: 0.49

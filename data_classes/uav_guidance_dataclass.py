@@ -57,9 +57,16 @@ class UAVGuidanceRewardParams:
 
 @dataclass
 class TargetManeuverParams:
-    """Parameters controlling randomized target evasive maneuvers."""
+    """Parameters controlling randomized target evasive maneuvers.
+
+    maneuver_type:
+        "evasive"   — random heading/alt changes on a timer (default, fighter-style)
+        "ballistic" — no maneuvering, zero thrust, gravity-driven trajectory (ICBM-style)
+        "straight"  — constant heading/alt, no maneuvers (simplest)
+    """
     maneuver_interval_min: float   # seconds between command changes
     maneuver_interval_max: float   # seconds between command changes
     heading_change_max: float      # degrees max heading change
     alt_change_max: float          # meters max altitude change
     throttle: float                # fixed target throttle (e.g. 0.49)
+    maneuver_type: str = "evasive" # "evasive", "ballistic", or "straight"

@@ -32,8 +32,8 @@ class UAVGuidanceEnv(gym.Env):
         self.act_shape = conf.action_shape
         
         # Load UAV and target configurations
-        UAV_conf_path = getattr(conf, 'UAV_config_file', 'simulation/config/aim7.yaml')
-        target_conf_path = getattr(conf, 'target_config_file', 'simulation/config/f16.yaml')
+        UAV_conf_path = getattr(conf, 'UAV_config_file', 'simulation/config/vehicles/aim7.yaml')
+        target_conf_path = getattr(conf, 'target_config_file', 'simulation/config/vehicles/f16.yaml')
         
         self.UAV_config = ConfigLoader.load_config(UAV_conf_path)
         self.target_config = ConfigLoader.load_config(target_conf_path)
@@ -50,8 +50,8 @@ class UAVGuidanceEnv(gym.Env):
         self.rp = conf.reward_params
         self.tm = conf.target_maneuver
         
-        # Determine reward type (default to 'paper' if not specified)
-        self.reward_type = getattr(conf, 'reward_type', 'paper')
+        # Determine reward type (default to 'gaudet' if not specified)
+        self.reward_type = getattr(conf, 'reward_type', 'gaudet')
 
         # Curriculum: adaptive (file-based) or fixed-schedule (step-based)
         self._step_count = 0
@@ -264,31 +264,50 @@ class UAVGuidanceEnv(gym.Env):
     # Target stepping (clock-synchronized with UAV FDM)
     # ------------------------------------------------------------------
     def _step_target(self):
-        """Step target FDM one frame, issuing randomized maneuver commands on schedule."""
-        # Randomize target maneuver commands periodically
-        if self.sim_time >= self._next_maneuver_time:
-            rng = self.np_random
-            heading_change = rng.uniform(
-                -self.tm.heading_change_max, self.tm.heading_change_max
-            )
-            self._target_heading_cmd = (self.target.get_psi() + heading_change) % 360.0
-            alt_change = rng.uniform(
-                -self.tm.alt_change_max, self.tm.alt_change_max
-            )
-            self._target_alt_cmd = np.clip(
-                self.target.get_altitude() + alt_change,
-                self.conf.initial_conditions.target_alt_min,
-                self.conf.initial_conditions.target_alt_max,
-            )
-            self._next_maneuver_time = self.sim_time + rng.uniform(
-                self.tm.maneuver_interval_min, self.tm.maneuver_interval_max
+        """Step target FDM one frame, issuing maneuver commands based on maneuver_type."""
+        maneuver_type = getattr(self.tm, 'maneuver_type', 'evasive')
+        _VALID_MANEUVER_TYPES = ("evasive", "ballistic", "straight")
+        if maneuver_type not in _VALID_MANEUVER_TYPES:
+            raise ValueError(
+                f"Unknown maneuver_type: '{maneuver_type}'. "
+                f"Options: {', '.join(_VALID_MANEUVER_TYPES)}"
             )
 
-        
-        # Unified autopilot control
-        ail, elev, rud, thr = self.target.get_autopilot_control(self._target_heading_cmd, self._target_alt_cmd)
-        self.target.command_flight(ail, elev, rud, thr)
-        
+        if maneuver_type == "ballistic":
+            # No autopilot control — zero thrust, fins neutral, pure gravity arc
+            self.target.command_flight(0.0, 0.0, 0.0, 0.0)
+
+        elif maneuver_type == "straight":
+            # Hold initial heading and altitude, no maneuvers
+            ail, elev, rud, thr = self.target.get_autopilot_control(
+                self._target_heading_cmd, self._target_alt_cmd)
+            self.target.command_flight(ail, elev, rud, thr)
+
+        else:  # "evasive" (default)
+            # Randomize target maneuver commands periodically
+            if self.sim_time >= self._next_maneuver_time:
+                rng = self.np_random
+                heading_change = rng.uniform(
+                    -self.tm.heading_change_max, self.tm.heading_change_max
+                )
+                self._target_heading_cmd = (self.target.get_psi() + heading_change) % 360.0
+                alt_change = rng.uniform(
+                    -self.tm.alt_change_max, self.tm.alt_change_max
+                )
+                self._target_alt_cmd = np.clip(
+                    self.target.get_altitude() + alt_change,
+                    self.conf.initial_conditions.target_alt_min,
+                    self.conf.initial_conditions.target_alt_max,
+                )
+                self._next_maneuver_time = self.sim_time + rng.uniform(
+                    self.tm.maneuver_interval_min, self.tm.maneuver_interval_max
+                )
+
+            # Unified autopilot control
+            ail, elev, rud, thr = self.target.get_autopilot_control(
+                self._target_heading_cmd, self._target_alt_cmd)
+            self.target.command_flight(ail, elev, rud, thr)
+
         self.target.fdm.run()
 
     # ------------------------------------------------------------------

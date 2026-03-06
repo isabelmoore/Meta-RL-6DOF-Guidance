@@ -1,0 +1,7 @@
+# Behavior: evasive — random heading/altitude changes on a timer
+maneuver_type: "evasive"
+maneuver_interval_min: 2.0        # seconds between maneuvers
+maneuver_interval_max: 6.0
+heading_change_max: 45.0          # degrees per maneuver
+alt_change_max: 2000.0            # meters per maneuver
+throttle: 0.49

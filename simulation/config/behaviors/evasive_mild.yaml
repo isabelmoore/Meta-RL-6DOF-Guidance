@@ -1,0 +1,7 @@
+# Behavior: evasive_mild — gentle maneuvers, less frequent
+maneuver_type: "evasive"
+maneuver_interval_min: 3.0
+maneuver_interval_max: 8.0
+heading_change_max: 30.0
+alt_change_max: 1500.0
+throttle: 0.49

@@ -121,6 +121,10 @@ def evaluate_scenario(model, scenario_name, n_episodes=50, holdout=False):
     return {
         "scenario": scenario_name,
         "label": label,
+        "summary": conf.summary,
+        "description": conf.description,
+        "guidance_type": conf.guidance_type,
+        "autopilot_type": conf.autopilot_type,
         "holdout": holdout,
         "n_episodes": n_episodes,
         "hit_rate": round(hit_rate, 4),
@@ -149,30 +153,26 @@ def print_comparison_table(results):
     Args:
         results: list of result dicts from evaluate_scenario().
     """
-    header = f"{'Scenario':<22s} {'Tag':>8s} {'Hit%':>8s} {'MissMean':>10s} {'MissMin':>10s} {'Reward':>10s} {'TopReason':>15s}"
-    print(f"\n{'='*90}")
+    print(f"\n{'='*100}")
     print("META-RL EVALUATION RESULTS")
-    print(f"{'='*90}")
-    print(header)
-    print("-" * 90)
+    print(f"{'='*100}")
 
     for r in results:
-        tag = "[HOLDOUT]" if r["holdout"] else ""
+        tag = " [HOLDOUT]" if r["holdout"] else ""
         top_reason = ""
         if r["termination_reasons"]:
             top_reason = max(r["termination_reasons"],
                              key=lambda k: r["termination_reasons"][k]["count"])
 
-        print(
-            f"{r['label']:<22s} {tag:>8s} "
-            f"{r['hit_rate']:>7.1%} "
-            f"{r['miss_distance']['mean']:>9.1f}m "
-            f"{r['miss_distance']['min']:>9.1f}m "
-            f"{r['reward']['mean']:>9.1f} "
-            f"{top_reason:>15s}"
-        )
+        print(f"\n  Scenario {r['scenario']}: {r.get('summary', r['label'])}{tag}")
+        print(f"    guidance={r.get('guidance_type','')}  autopilot={r.get('autopilot_type','')}")
+        print(f"    hit_rate={r['hit_rate']:.1%}  "
+              f"miss_mean={r['miss_distance']['mean']:.1f}m  "
+              f"miss_min={r['miss_distance']['min']:.1f}m  "
+              f"reward={r['reward']['mean']:.1f}  "
+              f"top_reason={top_reason}")
 
-    print(f"{'='*90}")
+    print(f"\n{'='*100}")
 
     all_hits = sum(r["hit_count"] for r in results)
     all_eps = sum(r["n_episodes"] for r in results)
@@ -442,8 +442,9 @@ def make_vehicle_gif(traj, path, ep_num):
     CG = vg.get("cg_m", 3.13)
     nose_len = vg.get("nose_frac", 0.15) * L
     fin_span = vg.get("fin_span_m", 0.63)
-    fin_start = 0.88 * L
-    fin_chord = L - fin_start
+    fin_start = vg.get("tail_position_frac", 0.88) * L
+    tail_chord_m = vg.get("tail_chord_m", None)
+    fin_chord = tail_chord_m if tail_chord_m else 0.12 * L
     fin_root_x = CG - fin_start
 
     total = len(pos_arr)
@@ -476,8 +477,13 @@ def make_vehicle_gif(traj, path, ep_num):
     body_pts_orig = body_mesh_base.points.copy()
 
     t = 0.008
-    sweep = 0.18
-    tip_chord = fin_chord * 0.55
+    tail_tip_ratio = vg.get("tail_tip_ratio", 0.15)
+    tail_sweep_val = vg.get("tail_sweep", "auto")
+    if tail_sweep_val == "auto" or tail_sweep_val is None:
+        sweep = fin_chord * (1 - tail_tip_ratio)
+    else:
+        sweep = float(tail_sweep_val)
+    tip_chord = fin_chord * tail_tip_ratio
     tail_pts = np.array([
         [0, 0, -t], [fin_chord, 0, -t],
         [sweep + tip_chord, fin_span, -t], [sweep, fin_span, -t],
@@ -489,25 +495,41 @@ def make_vehicle_gif(traj, path, ep_num):
         [4, 0, 1, 5, 4], [4, 2, 3, 7, 6],
         [4, 0, 4, 7, 3], [4, 1, 2, 6, 5],
     ])
-    fin_configs = [
-        (0, 'rud'), (np.pi / 2, 'elev'),
-        (np.pi, 'rud'), (3 * np.pi / 2, 'elev'),
-    ]
+    tail_fin_count = vg.get("tail_fins", 4)
+    fin_configs = [(i * 2 * np.pi / tail_fin_count,
+                    'rud' if i % 2 == 0 else 'elev')
+                   for i in range(tail_fin_count)]
 
-    wing_x = CG - 2.0
-    wing_chord = 0.7
-    wing_span = 0.40
-    wing_sweep = 0.35
-    wing_tip_chord = wing_chord * 0.3
-    wing_pts = np.array([
-        [wing_x, 0, -t], [wing_x + wing_chord, 0, -t],
-        [wing_x + wing_sweep + wing_tip_chord, wing_span, -t],
-        [wing_x + wing_sweep, wing_span, -t],
-        [wing_x, 0, t], [wing_x + wing_chord, 0, t],
-        [wing_x + wing_sweep + wing_tip_chord, wing_span, t],
-        [wing_x + wing_sweep, wing_span, t],
-    ])
-    wing_radials = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
+    wings_cfg = vg.get("wings", None)
+    if wings_cfg:
+        wing_pos = wings_cfg.get('position_frac', 0.4) * L
+        wing_x = CG - wing_pos
+        wing_chord = wings_cfg.get('chord_m', 0.5)
+        wing_span = wings_cfg.get('span_m', 0.5)
+        wing_tip = wings_cfg.get('tip_ratio', 0.15)
+        wing_sweep_val = wings_cfg.get('sweep', 'auto')
+        if wing_sweep_val == "auto":
+            wing_sweep = wing_chord * (1 - wing_tip)
+        else:
+            wing_sweep = float(wing_sweep_val)
+        wing_tip_chord = wing_chord * wing_tip
+        wing_offset = np.radians(wings_cfg.get('offset_deg', 0))
+        wing_count = wings_cfg.get('count', 4)
+    else:
+        wing_count = 0
+    if wing_count > 0:
+        wing_pts = np.array([
+            [wing_x, 0, -t], [wing_x + wing_chord, 0, -t],
+            [wing_x + wing_sweep + wing_tip_chord, wing_span, -t],
+            [wing_x + wing_sweep, wing_span, -t],
+            [wing_x, 0, t], [wing_x + wing_chord, 0, t],
+            [wing_x + wing_sweep + wing_tip_chord, wing_span, t],
+            [wing_x + wing_sweep, wing_span, t],
+        ])
+        wing_radials = [wing_offset + i * 2 * np.pi / wing_count for i in range(wing_count)]
+    else:
+        wing_pts = np.zeros((8, 3))
+        wing_radials = []
 
     def rx(a):
         c, s = np.cos(a), np.sin(a)
@@ -905,8 +927,9 @@ def make_combined_gif(traj, path, ep_num):
     CG = vg.get("cg_m", 3.13)
     nose_len = vg.get("nose_frac", 0.15) * L
     fin_span = vg.get("fin_span_m", 0.63)
-    fin_start = 0.88 * L
-    fin_chord = L - fin_start
+    fin_start = vg.get("tail_position_frac", 0.88) * L
+    tail_chord_m = vg.get("tail_chord_m", None)
+    fin_chord = tail_chord_m if tail_chord_m else 0.12 * L
     fin_root_x = CG - fin_start
 
     total = len(pos_arr)
@@ -939,8 +962,13 @@ def make_combined_gif(traj, path, ep_num):
     body_pts_orig = body_mesh_base.points.copy()
 
     t_thick = 0.008
-    sweep = 0.18
-    tip_chord = fin_chord * 0.55
+    tail_tip_ratio = vg.get("tail_tip_ratio", 0.15)
+    tail_sweep_val = vg.get("tail_sweep", "auto")
+    if tail_sweep_val == "auto" or tail_sweep_val is None:
+        sweep = fin_chord * (1 - tail_tip_ratio)
+    else:
+        sweep = float(tail_sweep_val)
+    tip_chord = fin_chord * tail_tip_ratio
     tail_pts = np.array([
         [0, 0, -t_thick], [fin_chord, 0, -t_thick],
         [sweep + tip_chord, fin_span, -t_thick], [sweep, fin_span, -t_thick],
@@ -952,25 +980,41 @@ def make_combined_gif(traj, path, ep_num):
         [4, 0, 1, 5, 4], [4, 2, 3, 7, 6],
         [4, 0, 4, 7, 3], [4, 1, 2, 6, 5],
     ])
-    fin_configs = [
-        (0, 'rud'), (np.pi / 2, 'elev'),
-        (np.pi, 'rud'), (3 * np.pi / 2, 'elev'),
-    ]
+    tail_fin_count = vg.get("tail_fins", 4)
+    fin_configs = [(i * 2 * np.pi / tail_fin_count,
+                    'rud' if i % 2 == 0 else 'elev')
+                   for i in range(tail_fin_count)]
 
-    wing_x = CG - 2.0
-    wing_chord = 0.7
-    wing_span = 0.40
-    wing_sweep = 0.35
-    wing_tip_chord = wing_chord * 0.3
-    wing_pts = np.array([
-        [wing_x, 0, -t_thick], [wing_x + wing_chord, 0, -t_thick],
-        [wing_x + wing_sweep + wing_tip_chord, wing_span, -t_thick],
-        [wing_x + wing_sweep, wing_span, -t_thick],
-        [wing_x, 0, t_thick], [wing_x + wing_chord, 0, t_thick],
-        [wing_x + wing_sweep + wing_tip_chord, wing_span, t_thick],
-        [wing_x + wing_sweep, wing_span, t_thick],
-    ])
-    wing_radials = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
+    wings_cfg = vg.get("wings", None)
+    if wings_cfg:
+        wing_pos = wings_cfg.get('position_frac', 0.4) * L
+        wing_x = CG - wing_pos
+        wing_chord = wings_cfg.get('chord_m', 0.5)
+        wing_span = wings_cfg.get('span_m', 0.5)
+        wing_tip = wings_cfg.get('tip_ratio', 0.15)
+        wing_sweep_val = wings_cfg.get('sweep', 'auto')
+        if wing_sweep_val == "auto":
+            wing_sweep = wing_chord * (1 - wing_tip)
+        else:
+            wing_sweep = float(wing_sweep_val)
+        wing_tip_chord = wing_chord * wing_tip
+        wing_offset = np.radians(wings_cfg.get('offset_deg', 0))
+        wing_count = wings_cfg.get('count', 4)
+    else:
+        wing_count = 0
+    if wing_count > 0:
+        wing_pts = np.array([
+            [wing_x, 0, -t_thick], [wing_x + wing_chord, 0, -t_thick],
+            [wing_x + wing_sweep + wing_tip_chord, wing_span, -t_thick],
+            [wing_x + wing_sweep, wing_span, -t_thick],
+            [wing_x, 0, t_thick], [wing_x + wing_chord, 0, t_thick],
+            [wing_x + wing_sweep + wing_tip_chord, wing_span, t_thick],
+            [wing_x + wing_sweep, wing_span, t_thick],
+        ])
+        wing_radials = [wing_offset + i * 2 * np.pi / wing_count for i in range(wing_count)]
+    else:
+        wing_pts = np.zeros((8, 3))
+        wing_radials = []
 
     def rx(a):
         c, s = np.cos(a), np.sin(a)
@@ -1275,13 +1319,25 @@ def _run_demo_episodes(model, scenario_name, n_episodes):
                 "length_m": geom.get('length_in', 246.0) * 0.0254,
                 "radius_m": geom.get('diameter_ft', 1.02) * 0.3048 / 2,
                 "cg_m": geom.get('cg_x_in', 123.2) * 0.0254,
-                "nose_frac": 0.15,
+                "nose_frac": geom.get('nose_frac', 0.15),
                 "fin_span_m": geom.get('wingspan_ft', 4.13) * 0.3048 / 2,
+                "tail_fins": geom.get('tail_fins', 4),
+                "tail_tip_ratio": geom.get('tail_tip_ratio', 0.15),
+                "tail_position_frac": geom.get('tail_position_frac', 0.88),
+                "tail_sweep": geom.get('tail_sweep', 'auto'),
+                "tail_chord_m": geom.get('tail_chord_m', None),
+                "wings": geom.get('wings', None),
             }
         trajectories.append(traj)
 
     env.close()
-    return trajectories, label
+
+    uav_tag = os.path.splitext(os.path.basename(conf.UAV_config_file))[0]
+    target_tag = os.path.splitext(os.path.basename(conf.target_config_file))[0]
+    behavior_tag = conf.target_maneuver.maneuver_type
+    folder_tag = f"{scenario_name}_int-{uav_tag}_tar-{target_tag}_{behavior_tag}"
+
+    return trajectories, label, folder_tag
 
 
 def generate_demo_gifs(model, scenario_names, n_gifs, eval_dir):
@@ -1298,7 +1354,7 @@ def generate_demo_gifs(model, scenario_names, n_gifs, eval_dir):
     total = 0
     for scenario in scenario_names:
         print(f"\nRunning {n_demo} demo episodes for {scenario}...")
-        trajectories, label = _run_demo_episodes(model, scenario, n_demo)
+        trajectories, label, folder_tag = _run_demo_episodes(model, scenario, n_demo)
 
         candidates = []
         for i, traj in enumerate(trajectories):
@@ -1321,16 +1377,16 @@ def generate_demo_gifs(model, scenario_names, n_gifs, eval_dir):
             print(f"No trajectories for {scenario}, skipping.")
             continue
 
-        gif_dir = os.path.join(eval_dir, f"{label}_gifs")
+        gif_dir = os.path.join(eval_dir, f"{folder_tag}_gifs")
         os.makedirs(gif_dir, exist_ok=True)
 
         for i, c in enumerate(selected):
             tag = "hit" if c["is_hit"] else c["traj"]["reason"]
-            fname = f"{label}_{i+1}_{tag}_trajectory_overview.gif"
+            fname = f"{folder_tag}_{i+1}_{tag}_trajectory_overview.gif"
             make_demo_gif(c["traj"], os.path.join(gif_dir, fname), ep_num=i + 1)
-            veh_fname = f"{label}_{i+1}_{tag}_vehicle_closeup.gif"
+            veh_fname = f"{folder_tag}_{i+1}_{tag}_vehicle_closeup.gif"
             make_vehicle_gif(c["traj"], os.path.join(gif_dir, veh_fname), ep_num=i + 1)
-            comb_fname = f"{label}_{i+1}_{tag}_engagement_view.gif"
+            comb_fname = f"{folder_tag}_{i+1}_{tag}_engagement_view.gif"
             make_combined_gif(c["traj"], os.path.join(gif_dir, comb_fname), ep_num=i + 1)
         print(f"Generated {len(selected)} GIFs for {scenario} in {gif_dir}/")
         total += len(selected)
@@ -1376,23 +1432,42 @@ def main():
         scen_tag = "_".join(args.scenarios)
         gifs_tag = f"_{args.gifs}gifs" if args.gifs > 0 else ""
         timestamp = datetime.now().strftime("%b%d_%H%M")
-        eval_name = f"{timestamp}_{run_name}_eval_{scen_tag}_{args.episodes}ep{gifs_tag}"
+        vehicle_tag = f"_int-{uav_tag}_tar-{target_tag}" if uav_tag and target_tag else ""
+        config_tag = f"_{guidance_tag}_rew-{reward_tag}" if guidance_tag else ""
+        eval_name = f"{timestamp}_{run_name}_eval_{scen_tag}{vehicle_tag}{config_tag}_{args.episodes}ep{gifs_tag}"
         eval_dir = os.path.join("evaluate_logs", eval_name)
     os.makedirs(eval_dir, exist_ok=True)
 
     meta_config_path = os.path.join(run_dir, "meta_config.json")
+    mc = {}
     holdout_set = set(args.holdout)
-    if os.path.isfile(meta_config_path) and not args.holdout:
+    if os.path.isfile(meta_config_path):
         with open(meta_config_path) as f:
             mc = json.load(f)
-        holdout_set = set(mc.get("holdout_scenarios", []))
+        if not args.holdout:
+            holdout_set = set(mc.get("holdout_scenarios", []))
+
+    # extract config info for display
+    guidance_tag = mc.get("guidance_type", "")
+    autopilot_tag = mc.get("autopilot_type", "")
+    reward_tag = mc.get("reward_config", mc.get("reward_type", ""))
+    uav_tag = mc.get("uav_config", "")
+    target_tag = mc.get("target_config", "")
+    if reward_tag and "/" in reward_tag:
+        reward_tag = os.path.splitext(os.path.basename(reward_tag))[0]
 
     if args.scenarios == ["all"]:
         scenario_names = list_scenarios()
     else:
         scenario_names = args.scenarios
 
+    trained_on = mc.get("train_scenarios", [])
     print(f"Loading model: {model_path}")
+    if trained_on:
+        print(f"Trained on: {', '.join(trained_on)}")
+    if guidance_tag or autopilot_tag or reward_tag:
+        print(f"Config:  guidance={guidance_tag}  autopilot={autopilot_tag}  reward={reward_tag}")
+    print(f"Evaluating: {', '.join(scenario_names)}")
     model = RecurrentPPO.load(model_path)
 
     results = []
@@ -1403,6 +1478,7 @@ def main():
         result = evaluate_scenario(
             model, name, n_episodes=args.episodes, holdout=is_holdout)
         results.append(result)
+        print(f"  {result.get('summary', result['label'])}")
         print(f"  -> hit_rate={result['hit_rate']:.1%}  "
               f"miss_mean={result['miss_distance']['mean']:.1f}m  "
               f"reward={result['reward']['mean']:.1f}")
@@ -1419,52 +1495,61 @@ def main():
         json.dump({
             "model_path": model_path,
             "timestamp": datetime.now().isoformat(),
+            "guidance_type": guidance_tag,
+            "autopilot_type": autopilot_tag,
+            "reward_config": reward_tag,
             "n_episodes_per_scenario": args.episodes,
             "holdout_scenarios": list(holdout_set),
             "results": save_results,
         }, f, indent=2)
     print(f"\nSaved: {results_path}")
 
-    for r in save_results:
-        name = r["scenario"]
-        label = r["label"]
-        tag = "_holdout" if r["holdout"] else ""
-        txt_path = os.path.join(eval_dir, f"{name}_{label}{tag}_evaluation.txt")
-        with open(txt_path, "w") as f:
-            f.write(f"{'='*50}\n")
-            f.write(f"EVALUATION: {label}\n")
-            f.write(f"{'='*50}\n")
-            f.write(f"Model:      {model_path}\n")
-            f.write(f"Timestamp:  {datetime.now().isoformat()}\n")
-            f.write(f"Scenario:   {name} ({label})\n")
-            f.write(f"Holdout:    {r['holdout']}\n")
-            f.write(f"Episodes:   {r['n_episodes']}\n\n")
-            f.write(f"{'='*50}\n")
-            f.write(f"HIT RATE\n")
-            f.write(f"{'='*50}\n")
-            f.write(f"Hit Rate:   {r['hit_rate']:.1%}\n")
-            f.write(f"Hits:       {r['hit_count']} / {r['n_episodes']}\n\n")
-            f.write(f"{'='*50}\n")
-            f.write(f"MISS DISTANCE\n")
-            f.write(f"{'='*50}\n")
+    txt_path = os.path.join(eval_dir, "evaluation_results.txt")
+    with open(txt_path, "w") as f:
+        f.write(f"{'='*60}\n")
+        f.write(f"Evaluation Results\n")
+        f.write(f"{'='*60}\n")
+        f.write(f"Model:      {model_path}\n")
+        f.write(f"Timestamp:  {datetime.now().isoformat()}\n")
+        if trained_on:
+            f.write(f"Trained on: {', '.join(trained_on)}\n")
+        if guidance_tag:
+            f.write(f"Guidance:   {guidance_tag}\n")
+        if autopilot_tag:
+            f.write(f"Autopilot:  {autopilot_tag}\n")
+        if reward_tag:
+            f.write(f"Reward:     {reward_tag}\n")
+        f.write(f"\n")
+
+        for r in save_results:
+            name = r["scenario"]
+            summary = r.get("summary", r["label"])
+            holdout_str = " [HOLDOUT]" if r["holdout"] else ""
+
+            f.write(f"{'='*60}\n")
+            f.write(f"Scenario {name}: {summary}{holdout_str}\n")
+            f.write(f"{'='*60}\n\n")
+
+            f.write(f"  Hit Rate:   {r['hit_rate']:.1%}  ({r['hit_count']} / {r['n_episodes']})\n\n")
+
             md = r["miss_distance"]
-            f.write(f"Mean:       {md['mean']:.1f} m\n")
-            f.write(f"Median:     {md['median']:.1f} m\n")
-            f.write(f"Min:        {md['min']:.1f} m\n")
-            f.write(f"Std:        {md['std']:.1f} m\n\n")
-            f.write(f"{'='*50}\n")
-            f.write(f"REWARD\n")
-            f.write(f"{'='*50}\n")
+            f.write(f"  Miss Distance\n")
+            f.write(f"    Mean:     {md['mean']:.1f} m\n")
+            f.write(f"    Median:   {md['median']:.1f} m\n")
+            f.write(f"    Min:      {md['min']:.1f} m\n")
+            f.write(f"    Std:      {md['std']:.1f} m\n\n")
+
             rw = r["reward"]
-            f.write(f"Mean:       {rw['mean']:.2f}\n")
-            f.write(f"Std:        {rw['std']:.2f}\n\n")
-            f.write(f"{'='*50}\n")
-            f.write(f"TERMINATION REASONS\n")
-            f.write(f"{'='*50}\n")
+            f.write(f"  Reward\n")
+            f.write(f"    Mean:     {rw['mean']:.2f}\n")
+            f.write(f"    Std:      {rw['std']:.2f}\n\n")
+
+            f.write(f"  Termination Reasons\n")
             for reason, data in r["termination_reasons"].items():
-                f.write(f"{reason:<20s} {data['count']:>4d}  ({data['pct']:.1%})\n")
-            f.write(f"{'='*50}\n")
-        print(f"Saved: {txt_path}")
+                f.write(f"    {reason:<20s} {data['count']:>4d}  ({data['pct']:.1%})\n")
+            f.write(f"\n")
+
+    print(f"Saved: {txt_path}")
 
     if args.gifs > 0:
         generate_demo_gifs(model, scenario_names, args.gifs, eval_dir)

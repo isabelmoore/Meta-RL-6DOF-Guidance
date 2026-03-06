@@ -278,18 +278,28 @@ def main():
 
     scenario_paths = [find_scenario(s) for s in train_scenarios]
     scenario_labels = []
+    scenario_configs = []
     for path in scenario_paths:
         import yaml
         with open(path) as f:
             data = yaml.safe_load(f)
         scenario_labels.append(data.get("label", data.get("name", "")))
+        scenario_configs.append(data)
+
+    # extract shared config info for title (from first scenario)
+    first = scenario_configs[0]
+    guidance_tag = first.get("guidance_type", "PN")
+    autopilot_tag = first.get("autopilot_type", "UAVPIDAutopilot").replace("PIDAutopilot", "")
+    reward_tag = os.path.splitext(os.path.basename(first.get("reward_config", first.get("reward_type", "gaudet"))))[0]
+    uav_tag = os.path.splitext(os.path.basename(first.get("UAV_config_file", "uav")))[0]
+    target_tag = os.path.splitext(os.path.basename(first.get("target_config_file", "target")))[0]
 
     if args.run_dir:
         run_dir = args.run_dir
     else:
         timestamp = datetime.now().strftime("%b%d_%H%M")
         scen_tag = "_".join(train_scenarios)
-        run_name = f"{timestamp}_META_{scen_tag}_{args.timesteps // 1_000_000}M"
+        run_name = f"{timestamp}_{scen_tag}_int-{uav_tag}_tar-{target_tag}_{guidance_tag}_rew-{reward_tag}_{args.timesteps // 1_000_000}m"
         run_dir = f"training_logs/{run_name}"
     log_dir = f"{run_dir}/logs"
     model_dir = f"{run_dir}/models"
@@ -303,6 +313,12 @@ def main():
         "holdout_scenarios": list(holdout_set),
         "scenario_paths": scenario_paths,
         "scenario_labels": scenario_labels,
+        "uav_config": uav_tag,
+        "target_config": target_tag,
+        "guidance_type": guidance_tag,
+        "autopilot_type": first.get("autopilot_type", "UAVPIDAutopilot"),
+        "reward_config": first.get("reward_config", "inline"),
+        "reward_type": first.get("reward_type", "gaudet"),
         "total_timesteps": args.timesteps,
         "n_envs": args.n_envs,
         "lstm_hidden": args.lstm_hidden,
@@ -329,6 +345,9 @@ def main():
     print(f"Scenarios:  {train_scenarios}")
     print(f"Holdout:    {list(holdout_set) if holdout_set else 'none'}")
     print(f"Labels:     {scenario_labels}")
+    print(f"Guidance:   {guidance_tag}")
+    print(f"Autopilot:  {autopilot_tag}")
+    print(f"Reward:     {reward_tag}")
     print(f"Timesteps:  {args.timesteps:,}")
     print(f"N_envs:     {args.n_envs}")
     print(f"LSTM:       {args.lstm_hidden}")

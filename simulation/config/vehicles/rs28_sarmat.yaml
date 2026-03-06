@@ -1,0 +1,122 @@
+name: "RS-28 Sarmat"
+type: "UAV"
+fdm_xml: "jsbsim_data/scripts/AIM_test.xml"
+fdm_aircraft: "AIM"
+
+# --- Physical Properties ---
+# RS-28 Sarmat (Satan II) ICBM
+# Length: 35.5m, Diameter: 3.0m, Launch mass: 208,100 kg
+# Payload: 10,000 kg, Range: 18,000 km
+# Liquid-fueled, two-stage, silo-launched
+mass:
+  weight_lbs: 458770.0
+  ixx: 46800.0
+  iyy: 4800000.0
+  izz: 4800000.0
+
+geometry:
+  length_in: 1398.0
+  diameter_ft: 9.84
+  wingspan_ft: 16.0
+  wingarea_ft2: 30.0
+  cg_x_in: 699.0
+  nose_frac: 0.18
+  tail_position_frac: 0.97
+  tail_fins: 4
+  tail_tip_ratio: 0.10
+  tail_sweep: 0.0
+
+# --- Aerodynamic Coefficients ---
+# Large body, high drag, minimal fin authority (thrust-vectored in reality)
+aero:
+  ca_base: 0.50
+  ca_induced: 2.5
+  cn_alpha_body_wing: 2.5
+  cn_crossflow: 3.0
+  cn_alpha_tail: 1.5
+  cn_delta_tail: -1.5
+  cy_body_wing: -2.5
+  cy_crossflow: -3.0
+  cy_tail_beta: -1.5
+  cy_rudder: 1.5
+  cm_alpha: -6.0
+  cm_elevator: 8.0
+  cm_q: -8.0
+  cn_beta: 6.0
+  cn_rudder: -8.0
+  cn_r: -8.0
+  cl_aileron: 0.1
+  cl_coupling: 0.05
+  cl_p: -1.0
+
+# --- Flight Control System Limits ---
+# Slow, heavy — limited fin deflection
+fcs:
+  elevator_rate_max_deg_s: 10.0
+  elevator_pos_max_deg: 4.0
+  aileron_rate_max_deg_s: 1.0
+  aileron_pos_max_deg: 0.1
+  rudder_rate_max_deg_s: 10.0
+  rudder_pos_max_deg: 4.0
+
+# --- Autopilot / Guidance ---
+limits:
+  phi_min: -180.0
+  phi_max: 180.0
+  theta_min: -90.0
+  theta_max: 90.0
+  psi_min: 0.0
+  psi_max: 360.0
+  alt_min: 0.0
+  alt_max: 1000000.0
+  thr_min: 0.0
+  thr_max: 1.0
+
+pid_gains:
+  roll:
+    P: 0.5
+    I: 0.0
+    D: 2.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 0.1
+    Integ_min: -0.1
+  pitch:
+    P: 0.005
+    I: 0.0
+    D: 1.5
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 0.1
+    Integ_min: -0.1
+  heading:
+    P: 0.5
+    I: 0.0
+    D: 2.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 0.1
+    Integ_min: -0.1
+
+navigation:
+  N: 1.0
+  dt: 0.1
+  cp: 360.0
+  acceleration_stage_in_sec: 0.0
+  dive_at: 0.0
+  tan_ref: 5000.0
+  theta_min_cruise: -30.0
+  theta_max_cruise: 30.0
+  theta_min: -85.0
+  theta_max: 85.0
+  alt_cruise: 0.0
+
+simulation:
+  sim_time_step: 6
+  control_time_step: 10
+
+performance:
+  target_lost_below_mach: 0.3
+  target_lost_below_alt: 0.0
+  lost_count: 10
+  effective_radius: 500.0

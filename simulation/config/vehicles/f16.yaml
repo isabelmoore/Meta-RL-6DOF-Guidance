@@ -1,0 +1,89 @@
+name: "F-16"
+type: "aircraft"
+fdm_xml: "jsbsim_data/scripts/f16_test.xml"
+weight_lbs: 20000.0
+length_in: 590.0
+
+limits:
+  phi_min: -180.0
+  phi_max: 180.0
+  theta_min: -90.0
+  theta_max: 90.0
+  psi_min: 0.0
+  psi_max: 360.0
+  alt_min: 3000.0
+  alt_max: 12000.0
+  thr_min: 0.2
+  thr_max: 0.69
+
+pid_gains:
+  roll:
+    P: 0.01
+    I: 0.0
+    D: 0.9
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 0.2
+    Integ_min: -0.2
+  roll_sec:
+    P: 0.2
+    I: 0.0
+    D: 0.2
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 1.0
+    Integ_min: -1.0
+  pitch:
+    P: 0.3
+    I: 0.0
+    D: 1.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 1.0
+    Integ_min: -1.0
+  rudder_theta:
+    P: 0.05
+    I: 0.0
+    D: 1.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 10.0
+    Integ_min: -10.0
+  rudder_psi:
+    P: 0.05
+    I: 0.0
+    D: 1.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 1.0
+    Integ_min: -1.0
+  elevator_psi:
+    P: 0.1
+    I: 0.0
+    D: 4.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 10.0
+    Integ_min: -10.0
+
+navigation:
+  head_act_space_min: 10.0
+  head_act_space_max: 35.0
+  tan_ref: 2000.0
+  mach_min: 0.1
+  mach_max: 1.2
+  v_down_min: -850.0
+  v_down_max: 850.0
+  roll_max: 80.0
+  pitch_max: 60.0
+  pitch_min: -60.0
+  alt_act_space_min: 1000.0
+  alt_act_space_max: 2000.0
+  climb_theta_max: 45.0
+  dive_theta_max: -45.0
+  theta_act_space_min: 10.0
+  theta_act_space_max: 30.0
+
+simulation:
+  sim_time_step: 6
+  control_time_step: 10

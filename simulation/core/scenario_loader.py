@@ -7,6 +7,10 @@ Usage:
 
     conf, label = load_scenario("scenarios/A.yaml")
     conf, label = load_scenario(find_scenario("A"))
+
+Scenarios can inline reward_params/target_maneuver or reference external files:
+    reward_config: "simulation/config/rewards/paper.yaml"
+    behavior_config: "simulation/config/behaviors/evasive.yaml"
 """
 import os
 import types
@@ -20,6 +24,7 @@ from data_classes.uav_guidance_dataclass import (
 )
 
 SCENARIOS_DIR = os.path.join(os.path.dirname(__file__), "../../scenarios")
+PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "../..")
 
 
 def find_scenario(name_or_path: str) -> str:
@@ -45,13 +50,53 @@ def list_scenarios() -> list:
     return sorted(
         os.path.splitext(f)[0]
         for f in os.listdir(scenarios_dir)
-        if f.endswith(".yaml")
+        if f.endswith(".yaml") and not f.startswith("README")
     )
+
+
+def _load_yaml_file(rel_path: str) -> dict:
+    """Load a YAML file relative to project root."""
+    full = os.path.join(PROJECT_ROOT, rel_path)
+    if not os.path.isfile(full):
+        raise FileNotFoundError(f"Config file not found: {rel_path} (resolved: {full})")
+    with open(full) as f:
+        return yaml.safe_load(f)
+
+
+def _resolve_reward_params(data: dict) -> dict:
+    """Get reward params from inline dict or external file reference."""
+    if "reward_config" in data:
+        params = _load_yaml_file(data["reward_config"])
+        if "reward_params" in data:
+            params.update(data["reward_params"])
+        return params
+    elif "reward_params" in data:
+        return data["reward_params"]
+    else:
+        raise KeyError("Scenario must have either 'reward_config' or 'reward_params'")
+
+
+def _resolve_behavior_params(data: dict) -> dict:
+    """Get target behavior params from inline dict or external file reference."""
+    if "behavior_config" in data:
+        params = _load_yaml_file(data["behavior_config"])
+        if "target_maneuver" in data:
+            params.update(data["target_maneuver"])
+        return params
+    elif "target_maneuver" in data:
+        return data["target_maneuver"]
+    else:
+        raise KeyError("Scenario must have either 'behavior_config' or 'target_maneuver'")
 
 
 def load_scenario(yaml_path: str):
     """
     Read a scenario YAML and return (conf, label) identical to make_config_X().
+
+    Supports two styles for reward_params and target_maneuver:
+      1. Inline: reward_params: {alpha: 0.1, ...}
+      2. File reference: reward_config: "simulation/config/rewards/paper.yaml"
+         (inline values override the file if both are present)
 
     Returns:
         conf: SimpleNamespace with all fields the environment expects
@@ -74,10 +119,26 @@ def load_scenario(yaml_path: str):
     conf.autopilot_type = data["autopilot_type"]
     conf.reward_type = data["reward_type"]
 
-    conf.reward_params = UAVGuidanceRewardParams(**data["reward_params"])
+    # reward and behavior: inline or file reference (file + inline overrides supported)
+    reward_dict = _resolve_reward_params(data)
+    behavior_dict = _resolve_behavior_params(data)
+
+    conf.reward_params = UAVGuidanceRewardParams(**reward_dict)
     conf.path_constraints = UAVGuidancePathConstraints(**data["path_constraints"])
     conf.initial_conditions = UAVGuidanceInitialConditions(**data["initial_conditions"])
-    conf.target_maneuver = TargetManeuverParams(**data["target_maneuver"])
+    conf.target_maneuver = TargetManeuverParams(**behavior_dict)
+
+    # store config names for titles/logging
+    conf.reward_config_name = data.get("reward_config", "inline")
+    conf.behavior_config_name = data.get("behavior_config", "inline")
+    conf.scenario_name = data.get("name", os.path.splitext(os.path.basename(yaml_path))[0])
+    conf.description = data.get("description", "")
+
+    # build a descriptive tag from vehicle configs and behavior
+    uav_name = os.path.splitext(os.path.basename(conf.UAV_config_file))[0]
+    target_name = os.path.splitext(os.path.basename(conf.target_config_file))[0]
+    behavior_name = behavior_dict.get("maneuver_type", "evasive")
+    conf.summary = f"{uav_name} vs {target_name} ({behavior_name})"
 
     label = data.get("label", data.get("name", os.path.splitext(os.path.basename(yaml_path))[0]))
     return conf, label

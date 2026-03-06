@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from simulation.core.config_loader import ConfigLoader
 from simulation.models.aircraft import Aircraft
 
-f16_config = ConfigLoader.load_config('simulation/config/f16.yaml')
+f16_config = ConfigLoader.load_config('simulation/config/vehicles/f16.yaml')
 
 f16_config.data_output_xml = 'data_output/flightgear.xml'
 f16_config.fg_sleep_time= 0.005

@@ -8,8 +8,8 @@ from simulation.core.config_loader import ConfigLoader
 from simulation.models.aircraft import Aircraft
 from simulation.models.uavs import UAV
 
-AAM_config = ConfigLoader.load_config('simulation/config/aim7.yaml')
-f16_config = ConfigLoader.load_config('simulation/config/f16.yaml')
+AAM_config = ConfigLoader.load_config('simulation/config/vehicles/aim7.yaml')
+f16_config = ConfigLoader.load_config('simulation/config/vehicles/f16.yaml')
 
 AAM_config.data_output_xml = None
 f16_config.data_output_xml = None

@@ -1,0 +1,14 @@
+# Gaudet reward with tighter hit radius (10m)
+# for extended range or wide angle scenarios that need more precision
+# wider curriculum ramp (3000 -> 10m) to gradually increase difficulty
+
+alpha: 0.1                       # LOS rate shaping weight
+sigma_omega: 0.05                # LOS rate shaping bandwidth
+roll_rate_penalty: 0.05          # penalty on roll rate
+ctrl_penalty: 0.01               # penalty on control effort
+hit_bonus: 500.0                 # terminal reward for hit
+violation_penalty: 25.0          # terminal penalty for constraint violation
+hit_radius: 10.0                 # meters, tighter than gaudet.yaml (50m)
+hit_radius_start: 3000.0         # curriculum start radius (m), wider ramp
+hit_radius_end: 10.0             # curriculum end radius (m)
+curriculum_steps: 4000000.0      # steps to anneal radius

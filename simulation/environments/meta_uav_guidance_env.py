@@ -82,7 +82,7 @@ class MetaUAVGuidanceEnv(UAVGuidanceEnv):
         self.rp = conf.reward_params
         self.tm = conf.target_maneuver
         self.pc = conf.path_constraints
-        self.reward_type = getattr(conf, 'reward_type', 'paper')
+        self.reward_type = getattr(conf, 'reward_type', 'gaudet')
 
         # Swap vehicle configs from cache
         self.UAV_config = self._vehicle_cache[conf.UAV_config_file]

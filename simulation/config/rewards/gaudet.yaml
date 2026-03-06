@@ -1,0 +1,16 @@
+# Gaudet & Furfaro 2023, Eq. 30a-30f
+# https://arxiv.org/pdf/2109.03880
+# standard hit radius (50m), gentle curriculum (500 -> 50m)
+
+alpha: 0.1                       # LOS rate shaping weight
+sigma_omega: 0.05                # LOS rate shaping bandwidth
+roll_rate_penalty: 0.05          # penalty on roll rate
+ctrl_penalty: 0.01               # penalty on control effort
+hit_bonus: 500.0                 # terminal reward for hit
+violation_penalty: 25.0          # terminal penalty for constraint violation
+hit_radius: 50.0                 # meters, range < this = hit
+hit_radius_start: 500.0          # curriculum start radius (m)
+hit_radius_end: 50.0             # curriculum end radius (m)
+curriculum_steps: 4000000.0      # steps to anneal radius
+proximity_weight: 0.5            # per-step proximity shaping
+miss_reward_scale: 300.0         # graded miss penalty scale (m)

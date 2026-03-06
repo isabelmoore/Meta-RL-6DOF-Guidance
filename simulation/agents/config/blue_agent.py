@@ -11,9 +11,9 @@ agent_parameters = Agent_parameters(
     heading=0.0
 )
 
-aircraft_simObj_conf = ConfigLoader.load_config('simulation/config/f16.yaml')
+aircraft_simObj_conf = ConfigLoader.load_config('simulation/config/vehicles/f16.yaml')
 
-UAV_simObj_conf = ConfigLoader.load_config('simulation/config/aim7.yaml')
+UAV_simObj_conf = ConfigLoader.load_config('simulation/config/vehicles/aim7.yaml')
 
 aircraft_name = aircraft_simObj_conf.name
 

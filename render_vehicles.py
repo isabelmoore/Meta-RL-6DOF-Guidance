@@ -1,5 +1,4 @@
 # Copyright (c) 2026 Isabel Moore. All rights reserved.
-"""Render a visual catalog of all UAV configs as a single comparison image."""
 
 import os
 import glob
@@ -14,11 +13,6 @@ from simulation.core.config_loader import ConfigLoader
 
 
 def _make_fin_set(chord, span, sweep, t, root_x, count=4, offset_deg=0, tip_ratio=0.55):
-    """Build a set of fins evenly spaced around the body.
-
-    Args:
-        tip_ratio: 0.0 = pointed delta, 0.55 = default trapezoid, 1.0 = rectangle.
-    """
     angles = [np.radians(offset_deg) + i * 2 * np.pi / count for i in range(count)]
     tip_chord = chord * tip_ratio
     pts = np.array([
@@ -44,7 +38,6 @@ def _make_fin_set(chord, span, sweep, t, root_x, count=4, offset_deg=0, tip_rati
 
 def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start,
                tail_fin_count=4, tail_tip_ratio=0.0, tail_sweep=None, wings=None):
-    """Build ogive body + tail fins + optional mid-body wings as PyVista meshes."""
     rho = (R_b**2 + nose_len**2) / (2 * R_b)
     x_nose = np.linspace(0, nose_len, 40)
     r_nose = np.sqrt(rho**2 - (nose_len - x_nose)**2) + R_b - rho
@@ -64,23 +57,26 @@ def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start,
     except TypeError:
         body = pv.StructuredGrid(X, Y, Z).extract_surface()
 
-    # Tail fins
     fin_root_x = CG - fin_start
-    fin_sweep = tail_sweep if tail_sweep is not None else fin_chord * 0.6
+    if tail_sweep == "auto" or tail_sweep is None:
+        fin_sweep = fin_chord * (1 - tail_tip_ratio)
+    else:
+        fin_sweep = tail_sweep
     fins = _make_fin_set(fin_chord, fin_span, fin_sweep, 0.008, fin_root_x,
                          count=tail_fin_count, tip_ratio=tail_tip_ratio)
 
-    # Mid-body wings (if configured)
     if wings:
         wing_count = wings.get('count', 4)
         wing_pos = wings.get('position_frac', 0.4) * L
         wing_span = wings.get('span_m', 0.5)
         wing_chord = wings.get('chord_m', 0.5)
-        wing_sweep = wings.get('sweep', 0.3)
+        wing_sweep_val = wings.get('sweep', 0.3)
         wing_root_x = CG - wing_pos
         wing_offset = wings.get('offset_deg', 45)
         wing_tip = wings.get('tip_ratio', 0.0)
-        fins += _make_fin_set(wing_chord, wing_span, wing_sweep, 0.006,
+        if wing_sweep_val == "auto":
+            wing_sweep_val = wing_chord * (1 - wing_tip)
+        fins += _make_fin_set(wing_chord, wing_span, wing_sweep_val, 0.006,
                               wing_root_x, count=wing_count, offset_deg=wing_offset,
                               tip_ratio=wing_tip)
 
@@ -88,15 +84,14 @@ def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start,
 
 
 def render_vehicle(conf, width=600, height=400):
-    """Render a single vehicle config and return a PIL Image."""
     geom = conf.geometry
     L = geom.get('length_in', 144.0) * 0.0254
     R_b = geom.get('diameter_ft', 0.667) * 0.3048 / 2
     CG = geom.get('cg_x_in', 72.0) * 0.0254
     nose_len = geom.get('nose_frac', 0.15) * L
     fin_span = geom.get('wingspan_ft', 3.33) * 0.3048 / 2
-    fin_start = 0.88 * L
-    fin_chord = L - fin_start
+    fin_start = geom.get('tail_position_frac', 0.88) * L
+    fin_chord = geom.get('tail_chord_m', 0.12 * L)
 
     tail_fin_count = geom.get('tail_fins', 4)
     tail_tip_ratio = geom.get('tail_tip_ratio', 0.0)
@@ -108,7 +103,6 @@ def render_vehicle(conf, width=600, height=400):
 
     pl = pv.Plotter(off_screen=True, window_size=[width, height])
     pl.set_background('white')
-
     pl.add_mesh(body, color='#888888', smooth_shading=True,
                 specular=0.5, specular_power=30)
     for f in fins:
@@ -129,22 +123,19 @@ def render_vehicle(conf, width=600, height=400):
     draw = ImageDraw.Draw(pil_img)
 
     mass = conf.mass
-    name = conf.name
     weight_kg = mass.get('weight_lbs', 0) * 0.4536
-    length_m = L
-    diam_m = R_b * 2
 
     lines = [
-        name,
+        conf.name,
         f"{weight_kg:.0f} kg  ({mass.get('weight_lbs', 0):.0f} lbs)",
-        f"L = {length_m:.2f} m  |  D = {diam_m:.3f} m",
+        f"L = {L:.2f} m  |  D = {R_b * 2:.3f} m",
         f"Fins: {geom.get('wingspan_ft', 0):.2f} ft span",
     ]
 
     try:
         font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
-    except:
+    except Exception:
         font_title = ImageFont.load_default()
         font = font_title
 
@@ -159,9 +150,8 @@ def render_vehicle(conf, width=600, height=400):
 
 
 def main():
-    yaml_files = sorted(glob.glob("simulation/config/*.yaml"))
+    yaml_files = sorted(glob.glob("simulation/config/vehicles/*.yaml"))
     uav_configs = []
-
     for yf in yaml_files:
         try:
             conf = ConfigLoader.load_config(yf)
@@ -175,7 +165,6 @@ def main():
         return
 
     print(f"Rendering {len(uav_configs)} vehicles...")
-
     w, h = 600, 400
     images = []
     for conf in uav_configs:
@@ -185,13 +174,11 @@ def main():
     cols = min(len(images), 2)
     rows = (len(images) + cols - 1) // cols
     canvas = Image.new('RGB', (w * cols, h * rows), color=(255, 255, 255))
-
     for i, img in enumerate(images):
         r, c = divmod(i, cols)
         canvas.paste(img, (c * w, r * h))
 
-    os.makedirs("demo", exist_ok=True)
-    out = "demo/vehicle_catalog.png"
+    out = "simulation/config/vehicles/vehicle_catalog.png"
     canvas.save(out)
     print(f"Saved: {out} ({canvas.size[0]}x{canvas.size[1]})")
 
