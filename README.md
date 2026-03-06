@@ -16,8 +16,8 @@ A single LSTM policy (RecurrentPPO) learns to control UAV fin commands across mu
 ---
 
 <p align="center">
-  <img src="demo/vehicle_closeup.gif" width="450" />
-  <img src="demo/engagement_view.gif" width="450" />
+  <img src="demo/vehicle_closeup.gif" width="400" />
+  <img src="demo/engagement_view.gif" width="400" />
 </p>
 
 <p align="center">
