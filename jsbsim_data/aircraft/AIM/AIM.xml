@@ -1,0 +1,488 @@
+<?xml version="1.0"?>
+<fdm_config name="Air to air Missile" version="2.0">
+
+    <fileheader>
+        <author>Edvards Scukins / Updated to match Gaudet-Furfaro paper</author>
+        <filecreationdate>2021-01-14</filecreationdate>
+        <version>2.0 — Slender body aero, paper-matched mass/inertia</version>
+        <description>
+          BVR Missile model matched to Gaudet and Furfaro (2023):
+          "Integrated and Adaptive Guidance and Control for
+           Endoatmospheric Missiles via Reinforcement Meta-Learning"
+
+          Mass: 455 kg, Length: 6.25 m, Diameter: 0.31 m
+          Post-burnout (no engine thrust). Slender body aerodynamics.
+          Rate-based FCS with +/-20 deg deflection limits.
+        </description>
+        <note>
+          This model uses publicly available data from the referenced paper.
+          Aerodynamic coefficients are derived from slender body theory
+          and the paper's missile geometry. For educational use only.
+        </note>
+    </fileheader>
+
+    <!-- ============================================================
+         METRICS — Reference areas and lengths for aero coefficients
+         S_REF = body cross-section = pi*(0.155)^2 = 0.0755 m^2 = 0.81 ft^2
+         c_ref = body diameter = 0.31 m = 1.02 ft (pitch moment ref)
+         b_ref = total wing span = 2*0.63 = 1.26 m = 4.13 ft (roll/yaw ref)
+         CG at 3.13 m from nose = 123.2 inches
+         ============================================================ -->
+    <metrics>
+        <wingarea unit="FT2"> 0.81 </wingarea>
+        <wingspan unit="FT"> 4.13 </wingspan>
+        <chord unit="FT"> 1.02 </chord>
+        <htailarea unit="FT2"> 0 </htailarea>
+        <htailarm unit="FT"> 0 </htailarm>
+        <vtailarea unit="FT2"> 0 </vtailarea>
+        <vtailarm unit="FT"> 0 </vtailarm>
+        <location name="AERORP" unit="IN">
+            <x> 123.2 </x>
+            <y> 0 </y>
+            <z> 0 </z>
+        </location>
+        <location name="EYEPOINT" unit="IN">
+            <x> 0 </x>
+            <y> 0 </y>
+            <z> 0 </z>
+        </location>
+        <location name="VRP" unit="IN">
+            <x> 123.2 </x>
+            <y> 0 </y>
+            <z> 0 </z>
+        </location>
+    </metrics>
+
+    <!-- ============================================================
+         MASS BALANCE — Paper: m = 455 kg, thin-walled cylinder inertia
+         Ixx = m*a^2 = 455*0.155^2 = 10.93 kg*m^2 = 8.06 SLUG*FT^2
+         Iyy = Izz = m*(3a^2 + dL^2)/12 = 1484 kg*m^2 = 1094 SLUG*FT^2
+         ============================================================ -->
+    <mass_balance>
+        <ixx unit="SLUG*FT2"> 8.06 </ixx>
+        <iyy unit="SLUG*FT2"> 1094 </iyy>
+        <izz unit="SLUG*FT2"> 1094 </izz>
+        <emptywt unit="LBS"> 1003 </emptywt>
+        <location name="CG" unit="IN">
+            <x> 123.2 </x>
+            <y> 0 </y>
+            <z> 0 </z>
+        </location>
+    </mass_balance>
+
+    <ground_reactions>
+    </ground_reactions>
+
+    <!-- ============================================================
+         PROPULSION — Post-burnout: no engine thrust
+         ============================================================ -->
+    <propulsion>
+        <engine file="no_thrust_rocket">
+            <location unit="M">
+                <x> 3.8 </x>
+                <y> 0 </y>
+                <z> 0 </z>
+            </location>
+            <orient unit="DEG">
+                <roll> 0.0 </roll>
+                <pitch> 0 </pitch>
+                <yaw> 0 </yaw>
+            </orient>
+            <feed>0</feed>
+            <thruster file="no_thrust_nozzle">
+                <location unit="IN">
+                    <x> 3.8 </x>
+                    <y> 0 </y>
+                    <z> 0 </z>
+                </location>
+                <orient unit="DEG">
+                    <roll> 0.0 </roll>
+                    <pitch> 0.0 </pitch>
+                    <yaw> 0.0 </yaw>
+                </orient>
+            </thruster>
+        </engine>
+        <tank type="FUEL">
+            <location unit="IN">
+                <x> 123.2 </x>
+                <y> 0 </y>
+                <z> 0 </z>
+            </location>
+            <capacity unit="KG"> 0 </capacity>
+            <contents unit="KG"> 0 </contents>
+        </tank>
+    </propulsion>
+
+    <!-- ============================================================
+         FLIGHT CONTROL SYSTEM — Rate-based with integrators
+         Agent outputs normalized rate commands in [-1, 1].
+         FCS scales to physical rates, integrates to positions.
+         Paper: combined ±80 deg/s rate, ±20 deg position
+                V5: reduced to ±40 deg/s rate, ±10 deg position (prevent load spikes)
+                differential ±1 deg/s rate, ±0.1 deg position
+         ============================================================ -->
+    <flight_control name="FCS: AIM Gaudet">
+
+        <!-- ===== Pitch (Elevator) Channel ===== -->
+        <channel name="Pitch">
+            <!-- Scale normalized command [-1,1] to rate [rad/s] -->
+            <!-- 40 deg/s = 0.698 rad/s (V5: halved from paper's 80) -->
+            <aerosurface_scale name="Elevator Rate Scale">
+                <input>fcs/elevator-cmd-norm</input>
+                <range>
+                    <min> -0.698 </min>
+                    <max>  0.698 </max>
+                </range>
+                <output>fcs/elevator-rate-rad_sec</output>
+            </aerosurface_scale>
+
+            <!-- Integrate rate to position, clip to ±10 deg = ±0.175 rad -->
+            <!-- V5: halved from paper's ±20 to prevent trim alpha > 30° → load violations -->
+            <integrator name="Elevator Position Integrator">
+                <input>fcs/elevator-rate-rad_sec</input>
+                <c1> 1.0 </c1>
+                <clipto>
+                    <min> -0.175 </min>
+                    <max>  0.175 </max>
+                </clipto>
+                <output>fcs/elevator-pos-rad</output>
+            </integrator>
+        </channel>
+
+        <!-- ===== Roll (Aileron) Channel — Differential ===== -->
+        <channel name="Roll">
+            <!-- Scale to ±1 deg/s = ±0.01745 rad/s -->
+            <aerosurface_scale name="Aileron Rate Scale">
+                <input>fcs/aileron-cmd-norm</input>
+                <range>
+                    <min> -0.01745 </min>
+                    <max>  0.01745 </max>
+                </range>
+                <output>fcs/aileron-rate-rad_sec</output>
+            </aerosurface_scale>
+
+            <!-- Integrate, clip to ±0.1 deg = ±0.00175 rad -->
+            <integrator name="Aileron Position Integrator">
+                <input>fcs/aileron-rate-rad_sec</input>
+                <c1> 1.0 </c1>
+                <clipto>
+                    <min> -0.00175 </min>
+                    <max>  0.00175 </max>
+                </clipto>
+                <output>fcs/left-aileron-pos-rad</output>
+            </integrator>
+
+            <pure_gain name="Right Aileron Mirror">
+                <input>fcs/left-aileron-pos-rad</input>
+                <gain> 1.0 </gain>
+                <output>fcs/right-aileron-pos-rad</output>
+            </pure_gain>
+        </channel>
+
+        <!-- ===== Yaw (Rudder) Channel ===== -->
+        <channel name="Yaw">
+            <!-- Scale to ±40 deg/s = ±0.698 rad/s (V5: halved from paper's 80) -->
+            <aerosurface_scale name="Rudder Rate Scale">
+                <input>fcs/rudder-cmd-norm</input>
+                <range>
+                    <min> -0.698 </min>
+                    <max>  0.698 </max>
+                </range>
+                <output>fcs/rudder-rate-rad_sec</output>
+            </aerosurface_scale>
+
+            <!-- Integrate, clip to ±10 deg = ±0.175 rad (V5: halved from paper's ±20) -->
+            <integrator name="Rudder Position Integrator">
+                <input>fcs/rudder-rate-rad_sec</input>
+                <c1> 1.0 </c1>
+                <clipto>
+                    <min> -0.175 </min>
+                    <max>  0.175 </max>
+                </clipto>
+                <output>fcs/rudder-pos-rad</output>
+            </integrator>
+        </channel>
+
+    </flight_control>
+
+    <!-- ============================================================
+         AERODYNAMICS — Slender body + Newtonian impact theory
+         Derived from Gaudet-Furfaro paper geometry:
+           d = 0.31 m, dL = 6.25 m, dN = 0.94 m
+           dCG = 3.13 m, dHL = 6.09 m (tail hinge line)
+           S_REF = 0.0755 m^2, A_plan = d*dL = 1.94 m^2
+
+         CN_alpha (body+wing) = 6.0 /rad
+         CN_alpha (tail)      = 4.0 /rad
+         Crossflow factor     = 38.5  (= 1.5 * A_plan/S_REF)
+         CA_0                 = 0.35  (base drag)
+         kappa                = 4.0   (induced drag)
+         Cm_alpha             = -20.4 /rad (static stability)
+         Cm_delta             = 38.2  /rad (elevator control)
+         ============================================================ -->
+    <aerodynamics>
+
+        <!-- ===== DRAG (Axial Force) ===== -->
+        <axis name="DRAG">
+
+            <!-- Base drag: CA_0 = 0.35 (paper Eq 11a: xi_0) -->
+            <function name="aero/coefficient/CA_base">
+                <description>Base_axial_drag</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> 0.35 </value>
+                </product>
+            </function>
+
+            <!-- Induced drag: kappa * (|alpha| + |beta|) -->
+            <!-- Linearized from CA_induced = kappa * (sum|CN| + sum|CY|) -->
+            <function name="aero/coefficient/CA_induced">
+                <description>Induced_drag_from_lift</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> 4.0 </value>
+                    <sum>
+                        <abs><property>aero/alpha-rad</property></abs>
+                        <abs><property>aero/beta-rad</property></abs>
+                    </sum>
+                </product>
+            </function>
+
+        </axis>
+
+        <!-- ===== LIFT (Normal Force — pitch plane) ===== -->
+        <axis name="LIFT">
+
+            <!-- Body + wing potential flow: CN_alpha_bw * alpha -->
+            <function name="aero/coefficient/CN_body_wing">
+                <description>Normal_force_body_wing_linear</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> 6.0 </value>
+                    <property>aero/alpha-rad</property>
+                </product>
+            </function>
+
+            <!-- Body crossflow: 38.5 * alpha * |alpha| -->
+            <!-- Approximates 38.5 * sin^2(alpha) * sign(alpha) -->
+            <function name="aero/coefficient/CN_crossflow">
+                <description>Normal_force_body_crossflow</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> 38.5 </value>
+                    <property>aero/alpha-rad</property>
+                    <abs><property>aero/alpha-rad</property></abs>
+                </product>
+            </function>
+
+            <!-- Tail fin lift due to alpha -->
+            <function name="aero/coefficient/CN_tail_alpha">
+                <description>Normal_force_tail_due_to_alpha</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> 4.0 </value>
+                    <property>aero/alpha-rad</property>
+                </product>
+            </function>
+
+            <!-- Tail fin control force: -CN_delta * elevator -->
+            <!-- Positive elevator -> negative lift (tail pushes down -> nose up) -->
+            <function name="aero/coefficient/CN_tail_elevator">
+                <description>Normal_force_tail_due_to_elevator</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> -4.0 </value>
+                    <property>fcs/elevator-pos-rad</property>
+                </product>
+            </function>
+
+        </axis>
+
+        <!-- ===== SIDE Force (yaw plane) ===== -->
+        <axis name="SIDE">
+
+            <!-- Body + wing: -CY_beta * beta (symmetric to pitch) -->
+            <function name="aero/coefficient/CY_body_wing">
+                <description>Side_force_body_wing_linear</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> -6.0 </value>
+                    <property>aero/beta-rad</property>
+                </product>
+            </function>
+
+            <!-- Body crossflow in yaw plane -->
+            <function name="aero/coefficient/CY_crossflow">
+                <description>Side_force_body_crossflow</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> -38.5 </value>
+                    <property>aero/beta-rad</property>
+                    <abs><property>aero/beta-rad</property></abs>
+                </product>
+            </function>
+
+            <!-- Tail fin side force due to beta -->
+            <function name="aero/coefficient/CY_tail_beta">
+                <description>Side_force_tail_due_to_beta</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> -4.0 </value>
+                    <property>aero/beta-rad</property>
+                </product>
+            </function>
+
+            <!-- Tail fin control: rudder -->
+            <function name="aero/coefficient/CY_rudder">
+                <description>Side_force_tail_due_to_rudder</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <value> 4.0 </value>
+                    <property>fcs/rudder-pos-rad</property>
+                </product>
+            </function>
+
+        </axis>
+
+        <!-- ===== PITCH Moment ===== -->
+        <axis name="PITCH">
+
+            <!-- Static stability: Cm_alpha = -20.4 /rad -->
+            <!-- Nose (destab) + wing (~0) + tail (stab) = net stable -->
+            <function name="aero/coefficient/Cm_alpha">
+                <description>Pitch_moment_due_to_alpha</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/cbarw-ft</property>
+                    <value> -20.4 </value>
+                    <property>aero/alpha-rad</property>
+                </product>
+            </function>
+
+            <!-- Elevator control: Cm_delta = 38.2 /rad -->
+            <!-- Positive elevator -> nose up -->
+            <function name="aero/coefficient/Cm_elevator">
+                <description>Pitch_moment_due_to_elevator</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/cbarw-ft</property>
+                    <value> 38.2 </value>
+                    <property>fcs/elevator-pos-rad</property>
+                </product>
+            </function>
+
+            <!-- Pitch damping: Cm_q = -20.0 -->
+            <function name="aero/coefficient/Cm_q">
+                <description>Pitch_damping</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/cbarw-ft</property>
+                    <property>aero/ci2vel</property>
+                    <property>velocities/q-rad_sec</property>
+                    <value> -20.0 </value>
+                </product>
+            </function>
+
+        </axis>
+
+        <!-- ===== YAW Moment ===== -->
+        <axis name="YAW">
+
+            <!-- Weathercock stability: Cn_beta = +20.4 /rad -->
+            <function name="aero/coefficient/Cn_beta">
+                <description>Yaw_moment_due_to_beta</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/bw-ft</property>
+                    <value> 20.4 </value>
+                    <property>aero/beta-rad</property>
+                </product>
+            </function>
+
+            <!-- Rudder control: Cn_dr = -38.2 /rad -->
+            <function name="aero/coefficient/Cn_rudder">
+                <description>Yaw_moment_due_to_rudder</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/bw-ft</property>
+                    <value> -38.2 </value>
+                    <property>fcs/rudder-pos-rad</property>
+                </product>
+            </function>
+
+            <!-- Yaw damping: Cn_r = -20.0 -->
+            <function name="aero/coefficient/Cn_r">
+                <description>Yaw_damping</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/bw-ft</property>
+                    <property>aero/bi2vel</property>
+                    <property>velocities/r-rad_sec</property>
+                    <value> -20.0 </value>
+                </product>
+            </function>
+
+        </axis>
+
+        <!-- ===== ROLL Moment ===== -->
+        <axis name="ROLL">
+
+            <!-- Differential fin (aileron) roll control -->
+            <function name="aero/coefficient/Cl_aileron">
+                <description>Roll_moment_due_to_aileron</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/bw-ft</property>
+                    <property>fcs/left-aileron-pos-rad</property>
+                    <value> 0.5 </value>
+                </product>
+            </function>
+
+            <!-- Alpha-beta coupling: xi_alpha * alpha * beta -->
+            <function name="aero/coefficient/Cl_coupling">
+                <description>Roll_coupling_alpha_beta</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/bw-ft</property>
+                    <value> 0.1 </value>
+                    <property>aero/alpha-rad</property>
+                    <property>aero/beta-rad</property>
+                </product>
+            </function>
+
+            <!-- Roll damping: Cl_p = -5.0 (paper: xi_damp = 5) -->
+            <function name="aero/coefficient/Cl_p">
+                <description>Roll_damping</description>
+                <product>
+                    <property>aero/qbar-psf</property>
+                    <property>metrics/Sw-sqft</property>
+                    <property>metrics/bw-ft</property>
+                    <property>aero/bi2vel</property>
+                    <property>velocities/p-rad_sec</property>
+                    <value> -5.0 </value>
+                </product>
+            </function>
+
+        </axis>
+
+    </aerodynamics>
+
+</fdm_config>

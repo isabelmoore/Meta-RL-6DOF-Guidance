@@ -1,0 +1,89 @@
+# AIM-7 UAV vehicle configuration.
+# To use a different UAV, copy this file and point your scenario YAML at it:
+#   UAV_config_file: "simulation/config/your_vehicle.yaml"
+
+name: "AIM-7"
+type: "UAV"
+fdm_xml: "jsbsim_data/scripts/AIM_test.xml"
+weight_lbs: 510.0       # vehicle weight, lbs
+length_in: 144.0        # vehicle length, inches
+
+limits:
+  phi_min: -180.0       # min roll, degrees
+  phi_max: 180.0        # max roll, degrees
+  theta_min: -90.0      # min pitch, degrees
+  theta_max: 90.0       # max pitch, degrees
+  psi_min: 0.0          # min heading, degrees
+  psi_max: 360.0        # max heading, degrees
+  alt_min: 3000.0       # min altitude, meters
+  alt_max: 12000.0      # max altitude, meters
+  thr_min: 0.0          # min throttle, 0-1
+  thr_max: 1.0          # max throttle, 0-1
+
+pid_gains:
+  roll:
+    P: 1.0
+    I: 0.0
+    D: 4.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 0.1
+    Integ_min: -0.1
+  pitch:
+    P: 0.01
+    I: 0.0
+    D: 3.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 0.1
+    Integ_min: -0.1
+  heading:
+    P: 1.8
+    I: 0.0
+    D: 4.0
+    Deriv: 0.0
+    Integ: 0.0
+    Integ_max: 0.1
+    Integ_min: -0.1
+
+navigation:
+  N: 2.0                         # PN gain, dimensionless
+  dt: 0.1                        # guidance timestep, seconds
+  cp: 360.0                      # heading wrap, degrees
+  acceleration_stage_in_sec: 2.0  # hold time after launch, seconds
+  dive_at: 30000.0               # dive range threshold, meters
+  tan_ref: 2000.0                # alt-to-pitch reference, meters
+  theta_min_cruise: -30.0        # min cruise pitch, degrees
+  theta_max_cruise: 30.0         # max cruise pitch, degrees
+  theta_min: -70.0               # min intercept pitch, degrees
+  theta_max: 70.0                # max intercept pitch, degrees
+  alt_cruise: 15000.0            # cruise altitude, meters
+
+simulation:
+  sim_time_step: 6               # JSBSim frames per step
+  control_time_step: 10          # control update divisor
+
+performance:
+  target_lost_below_mach: 1.0    # min Mach threshold
+  target_lost_below_alt: 0.0     # min altitude, meters
+  lost_count: 3                  # frames before termination
+  effective_radius: 300.0        # engagement radius, meters
+
+visualization:
+  length: 6.25             # body length, meters
+  body_radius: 0.155       # fuselage radius, meters
+  cg_offset: 3.13          # CG from nose, meters
+  nose_length: 0.94        # nose length, meters
+  fin_root_offset: 5.5     # fin root aft of CG, meters
+  fin_span: 0.63           # fin span, meters
+  fin_sweep: 0.18          # fin sweep offset, meters
+  fin_tip_chord_ratio: 0.55 # tip/root chord ratio
+  fin_thickness: 0.008     # fin half-thickness, meters
+  wing_cg_offset: 2.0      # wing fwd of CG, meters
+  wing_chord: 0.7          # wing root chord, meters
+  wing_span: 0.40          # wing semi-span, meters
+  wing_sweep: 0.35         # wing sweep offset, meters
+  wing_tip_chord_ratio: 0.3 # tip/root chord ratio
+  n_frames: 120            # frames per GIF
+  body_color: '#a8c4d8'    # fuselage color, hex
+  fin_color: '#90b0c4'     # fin color, hex

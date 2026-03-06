@@ -1,0 +1,17 @@
+runs/
+training_logs/
+evaluate_logs/
+data_output/
+__pycache__/
+.tb_tmp/
+.claude/
+.mcp.json
+*.pyc
+*.gif
+!demo/*.gif
+*.png
+*.pdf
+*.tar.gz
+CLAUDE.md
+nohup.out
+paper/

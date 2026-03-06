@@ -1,0 +1,18 @@
+services:
+  train:
+    build: .
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - .:/wizard
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    pids_limit: -1
+    command: ["sleep", "infinity"]
+    container_name: meta-rl

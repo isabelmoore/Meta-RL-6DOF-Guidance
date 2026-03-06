@@ -1,0 +1,10 @@
+training_logs/
+.git/
+__pycache__/
+*.pyc
+.claude/
+paper/
+*.pdf
+*.gif
+*.png
+runs/

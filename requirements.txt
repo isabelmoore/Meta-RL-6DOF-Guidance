@@ -1,0 +1,13 @@
+torch==2.10.0
+gymnasium==1.2.3
+jsbsim==1.2.4
+stable-baselines3==2.7.1
+sb3-contrib==2.7.1
+pymap3d==3.2.0
+pandas==3.0.0
+py-trees==2.4.0
+matplotlib==3.10.8
+pyvista>=0.43
+tensorboard==2.17.1
+numpy==2.4.2
+PyYAML>=5.4

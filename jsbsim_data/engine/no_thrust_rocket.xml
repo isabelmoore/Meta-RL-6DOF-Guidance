@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<rocket_engine name="No Thrust (Post-Burnout)">
+  <isp>                    1     </isp>
+  <maxthrottle>           0.00   </maxthrottle>
+  <minthrottle>           0.00   </minthrottle>
+  <slfuelflowmax unit="LBS/SEC">   0.0  </slfuelflowmax>
+  <sloxiflowmax unit="LBS/SEC">    0.0  </sloxiflowmax>
+</rocket_engine>
