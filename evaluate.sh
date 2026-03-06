@@ -2,8 +2,8 @@
 
 RUN_DIR="training_logs/Mar03_0115_META_A_30M"
 SCENARIOS="A"
-EPISODES=50
-GIFS=10
+EPISODES=5
+GIFS=2
 GPU=0
 
 # Build eval dir name (matches evaluate_meta.py naming)

@@ -5,7 +5,6 @@ Usage:
     python evaluate_meta.py --model training_logs/.../models/final --scenarios all
 """
 import argparse
-import dataclasses
 import json
 import os
 import re
@@ -18,7 +17,6 @@ from glob import glob
 from sb3_contrib import RecurrentPPO
 from simulation.environments.uav_guidance_env import UAVGuidanceEnv
 from simulation.core.scenario_loader import load_scenario, find_scenario, list_scenarios
-from data_classes.uav_dataclass import UAVVisualization
 
 import pymap3d as pm
 
@@ -248,12 +246,6 @@ _COL_TEXT = '#222222'
 _COL_HIT = '#00aa00'
 
 
-def _get_viz(traj):
-    """Extract visualization config from traj dict, falling back to defaults."""
-    viz_dict = traj.get("viz", {})
-    return UAVVisualization(**viz_dict) if viz_dict else UAVVisualization()
-
-
 def make_demo_gif(traj, path, ep_num):
     """Generate trajectory overview GIF with 3D matplotlib plot of UAV and target paths.
 
@@ -443,18 +435,14 @@ def make_vehicle_gif(traj, path, ep_num):
     times = np.array(traj["time"])
     reason = traj["reason"]
 
-    # Vehicle geometry from config (or defaults)
-    viz = _get_viz(traj)
-    L = viz.length
-    R_b = viz.body_radius
-    CG = viz.cg_offset
-    nose_len = viz.nose_length
-    fin_root_x = CG - viz.fin_root_offset
-    fin_chord = L - viz.fin_root_offset
-    fin_span = viz.fin_span
+    L, R_b, CG = 6.25, 0.155, 3.13
+    nose_len = 0.94
+    fin_root_x = CG - 5.5
+    fin_chord = L - 5.5
+    fin_span = 0.63
 
     total = len(pos_arr)
-    n_frames = viz.n_frames
+    n_frames = 120
     step = max(1, total // n_frames)
     indices = list(range(0, total, step))
     if indices[-1] != total - 1:
@@ -482,9 +470,9 @@ def make_vehicle_gif(traj, path, ep_num):
     body_mesh_base = pv.StructuredGrid(X, Y, Z).extract_surface(algorithm=None)
     body_pts_orig = body_mesh_base.points.copy()
 
-    t = viz.fin_thickness
-    sweep = viz.fin_sweep
-    tip_chord = fin_chord * viz.fin_tip_chord_ratio
+    t = 0.008
+    sweep = 0.18
+    tip_chord = fin_chord * 0.55
     tail_pts = np.array([
         [0, 0, -t], [fin_chord, 0, -t],
         [sweep + tip_chord, fin_span, -t], [sweep, fin_span, -t],
@@ -501,11 +489,11 @@ def make_vehicle_gif(traj, path, ep_num):
         (np.pi, 'rud'), (3 * np.pi / 2, 'elev'),
     ]
 
-    wing_x = CG - viz.wing_cg_offset
-    wing_chord = viz.wing_chord
-    wing_span = viz.wing_span
-    wing_sweep = viz.wing_sweep
-    wing_tip_chord = wing_chord * viz.wing_tip_chord_ratio
+    wing_x = CG - 2.0
+    wing_chord = 0.7
+    wing_span = 0.40
+    wing_sweep = 0.35
+    wing_tip_chord = wing_chord * 0.3
     wing_pts = np.array([
         [wing_x, 0, -t], [wing_x + wing_chord, 0, -t],
         [wing_x + wing_sweep + wing_tip_chord, wing_span, -t],
@@ -568,8 +556,8 @@ def make_vehicle_gif(traj, path, ep_num):
         for col in range(flight_data_arr.shape[1]):
             fd_smooth[:, col] = _moving_avg(flight_data_arr[:, col], smooth_w)
 
-    body_color = viz.body_color
-    fin_color = viz.fin_color
+    body_color = '#a8c4d8'
+    fin_color = '#90b0c4'
 
     ring_n = 80
     ring_r = 3.0
@@ -871,7 +859,7 @@ def make_vehicle_gif(traj, path, ep_num):
 
     if frames:
         frames[0].save(path, save_all=True, append_images=frames[1:],
-                       duration=12, loop=0, optimize=True)
+                       duration=25, loop=0, optimize=True)
     print(f"  Saved: {path}  (vehicle view, {reason})")
 
 
@@ -906,18 +894,14 @@ def make_combined_gif(traj, path, ep_num):
     times = np.array(traj["time"])
     reason = traj["reason"]
 
-    # Vehicle geometry from config (or defaults)
-    viz = _get_viz(traj)
-    L = viz.length
-    R_b = viz.body_radius
-    CG = viz.cg_offset
-    nose_len = viz.nose_length
-    fin_root_x = CG - viz.fin_root_offset
-    fin_chord = L - viz.fin_root_offset
-    fin_span = viz.fin_span
+    L, R_b, CG = 6.25, 0.155, 3.13
+    nose_len = 0.94
+    fin_root_x = CG - 5.5
+    fin_chord = L - 5.5
+    fin_span = 0.63
 
     total = len(pos_arr)
-    n_frames = viz.n_frames
+    n_frames = 120
     step = max(1, total // n_frames)
     indices = list(range(0, total, step))
     if indices[-1] != total - 1:
@@ -945,9 +929,9 @@ def make_combined_gif(traj, path, ep_num):
     body_mesh_base = pv.StructuredGrid(X, Y, Z).extract_surface(algorithm=None)
     body_pts_orig = body_mesh_base.points.copy()
 
-    t_thick = viz.fin_thickness
-    sweep = viz.fin_sweep
-    tip_chord = fin_chord * viz.fin_tip_chord_ratio
+    t_thick = 0.008
+    sweep = 0.18
+    tip_chord = fin_chord * 0.55
     tail_pts = np.array([
         [0, 0, -t_thick], [fin_chord, 0, -t_thick],
         [sweep + tip_chord, fin_span, -t_thick], [sweep, fin_span, -t_thick],
@@ -964,11 +948,11 @@ def make_combined_gif(traj, path, ep_num):
         (np.pi, 'rud'), (3 * np.pi / 2, 'elev'),
     ]
 
-    wing_x = CG - viz.wing_cg_offset
-    wing_chord = viz.wing_chord
-    wing_span = viz.wing_span
-    wing_sweep = viz.wing_sweep
-    wing_tip_chord = wing_chord * viz.wing_tip_chord_ratio
+    wing_x = CG - 2.0
+    wing_chord = 0.7
+    wing_span = 0.40
+    wing_sweep = 0.35
+    wing_tip_chord = wing_chord * 0.3
     wing_pts = np.array([
         [wing_x, 0, -t_thick], [wing_x + wing_chord, 0, -t_thick],
         [wing_x + wing_sweep + wing_tip_chord, wing_span, -t_thick],
@@ -1031,8 +1015,8 @@ def make_combined_gif(traj, path, ep_num):
         for col in range(flight_data_arr.shape[1]):
             fd_smooth[:, col] = _moving_avg(flight_data_arr[:, col], smooth_w)
 
-    body_color = viz.body_color
-    fin_color = viz.fin_color
+    body_color = '#a8c4d8'
+    fin_color = '#90b0c4'
 
     all_pts = np.vstack([pos_arr, tgt_arr])
     scene_size = np.max(np.ptp(all_pts, axis=0))
@@ -1216,7 +1200,6 @@ def _run_demo_episodes(model, scenario_name, n_episodes):
     conf.reward_params.hit_radius_end = 0.0
 
     env = UAVGuidanceEnv(conf=conf)
-    viz = dataclasses.asdict(env.UAV_config.visualization)
     trajectories = []
 
     for ep in range(n_episodes):
@@ -1231,7 +1214,7 @@ def _run_demo_episodes(model, scenario_name, n_episodes):
 
         traj = {"UAV": [], "target": [], "time": [], "reason": "",
                 "attitudes": [], "fins": [], "flight_data": [],
-                "target_flight_data": [], "viz": viz}
+                "target_flight_data": []}
 
         def record_pos():
             me, mn, mu = pm.geodetic2enu(
