@@ -13,10 +13,14 @@ from PIL import Image, ImageDraw, ImageFont
 from simulation.core.config_loader import ConfigLoader
 
 
-def _make_fin_set(chord, span, sweep, t, root_x, count=4, offset_deg=0):
-    """Build a set of fins evenly spaced around the body."""
+def _make_fin_set(chord, span, sweep, t, root_x, count=4, offset_deg=0, tip_ratio=0.55):
+    """Build a set of fins evenly spaced around the body.
+
+    Args:
+        tip_ratio: 0.0 = pointed delta, 0.55 = default trapezoid, 1.0 = rectangle.
+    """
     angles = [np.radians(offset_deg) + i * 2 * np.pi / count for i in range(count)]
-    tip_chord = chord * 0.55
+    tip_chord = chord * tip_ratio
     pts = np.array([
         [0, 0, -t], [chord, 0, -t],
         [sweep + tip_chord, span, -t], [sweep, span, -t],
@@ -38,7 +42,8 @@ def _make_fin_set(chord, span, sweep, t, root_x, count=4, offset_deg=0):
     return fins
 
 
-def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start, tail_fin_count=4, wings=None):
+def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start,
+               tail_fin_count=4, tail_tip_ratio=0.0, tail_sweep=None, wings=None):
     """Build ogive body + tail fins + optional mid-body wings as PyVista meshes."""
     rho = (R_b**2 + nose_len**2) / (2 * R_b)
     x_nose = np.linspace(0, nose_len, 40)
@@ -61,8 +66,9 @@ def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start, tail_fin_co
 
     # Tail fins
     fin_root_x = CG - fin_start
-    fins = _make_fin_set(fin_chord, fin_span, 0.18, 0.008, fin_root_x,
-                         count=tail_fin_count)
+    fin_sweep = tail_sweep if tail_sweep is not None else fin_chord * 0.6
+    fins = _make_fin_set(fin_chord, fin_span, fin_sweep, 0.008, fin_root_x,
+                         count=tail_fin_count, tip_ratio=tail_tip_ratio)
 
     # Mid-body wings (if configured)
     if wings:
@@ -73,8 +79,10 @@ def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start, tail_fin_co
         wing_sweep = wings.get('sweep', 0.3)
         wing_root_x = CG - wing_pos
         wing_offset = wings.get('offset_deg', 45)
+        wing_tip = wings.get('tip_ratio', 0.0)
         fins += _make_fin_set(wing_chord, wing_span, wing_sweep, 0.006,
-                              wing_root_x, count=wing_count, offset_deg=wing_offset)
+                              wing_root_x, count=wing_count, offset_deg=wing_offset,
+                              tip_ratio=wing_tip)
 
     return body, fins
 
@@ -85,15 +93,18 @@ def render_vehicle(conf, width=600, height=400):
     L = geom.get('length_in', 144.0) * 0.0254
     R_b = geom.get('diameter_ft', 0.667) * 0.3048 / 2
     CG = geom.get('cg_x_in', 72.0) * 0.0254
-    nose_len = 0.15 * L
+    nose_len = geom.get('nose_frac', 0.15) * L
     fin_span = geom.get('wingspan_ft', 3.33) * 0.3048 / 2
     fin_start = 0.88 * L
     fin_chord = L - fin_start
 
     tail_fin_count = geom.get('tail_fins', 4)
+    tail_tip_ratio = geom.get('tail_tip_ratio', 0.0)
+    tail_sweep_val = geom.get('tail_sweep', None)
     wings = geom.get('wings', None)
     body, fins = build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start,
-                            tail_fin_count=tail_fin_count, wings=wings)
+                            tail_fin_count=tail_fin_count, tail_tip_ratio=tail_tip_ratio,
+                            tail_sweep=tail_sweep_val, wings=wings)
 
     pl = pv.Plotter(off_screen=True, window_size=[width, height])
     pl.set_background('white')

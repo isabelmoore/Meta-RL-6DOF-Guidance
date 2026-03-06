@@ -1,56 +1,59 @@
-name: "Ballistic-RV"
+name: "Ballistic-V2"
 type: "UAV"
 fdm_xml: "jsbsim_data/scripts/AIM_test.xml"
 fdm_aircraft: "AIM"
 
 # --- Physical Properties ---
-# Generic short-range ballistic reentry vehicle
-# Stubby body, wide diameter, small control fins
+# V-2 style ballistic missile
+# Long body, tapered ogive nose, small tail fins
 mass:
-  weight_lbs: 800.0
-  ixx: 10.71
-  iyy: 73.37
-  izz: 73.37
+  weight_lbs: 27000.0
+  ixx: 1580.0
+  iyy: 285000.0
+  izz: 285000.0
 
 geometry:
-  length_in: 70.0
-  diameter_ft: 1.312
-  wingspan_ft: 3.94
-  wingarea_ft2: 1.353
-  cg_x_in: 35.0
+  length_in: 551.0
+  diameter_ft: 5.41
+  wingspan_ft: 11.8
+  wingarea_ft2: 23.0
+  cg_x_in: 330.0
+  nose_frac: 0.30
+  tail_fins: 4
+  tail_tip_ratio: 0.35
+  tail_sweep: 0.4
 
 # --- Aerodynamic Coefficients ---
-# Higher drag (blunt body), lower lift slopes, less control authority
+# Higher drag (larger body), moderate control
 aero:
-  ca_base: 0.55
+  ca_base: 0.40
   ca_induced: 3.0
   cn_alpha_body_wing: 4.0
-  cn_crossflow: 8.5
-  cn_alpha_tail: 2.5
-  cn_delta_tail: -2.5
+  cn_crossflow: 5.5
+  cn_alpha_tail: 2.0
+  cn_delta_tail: -2.0
   cy_body_wing: -4.0
-  cy_crossflow: -8.5
-  cy_tail_beta: -2.5
-  cy_rudder: 2.5
-  cm_alpha: -12.0
-  cm_elevator: 20.0
-  cm_q: -15.0
-  cn_beta: 12.0
-  cn_rudder: -20.0
-  cn_r: -15.0
-  cl_aileron: 0.3
+  cy_crossflow: -5.5
+  cy_tail_beta: -2.0
+  cy_rudder: 2.0
+  cm_alpha: -10.0
+  cm_elevator: 15.0
+  cm_q: -12.0
+  cn_beta: 10.0
+  cn_rudder: -15.0
+  cn_r: -12.0
+  cl_aileron: 0.2
   cl_coupling: 0.1
-  cl_p: -3.0
+  cl_p: -2.0
 
 # --- Flight Control System Limits ---
-# Smaller fins = less deflection authority
 fcs:
-  elevator_rate_max_deg_s: 30.0
-  elevator_pos_max_deg: 8.0
+  elevator_rate_max_deg_s: 20.0
+  elevator_pos_max_deg: 6.0
   aileron_rate_max_deg_s: 1.0
   aileron_pos_max_deg: 0.1
-  rudder_rate_max_deg_s: 30.0
-  rudder_pos_max_deg: 8.0
+  rudder_rate_max_deg_s: 20.0
+  rudder_pos_max_deg: 6.0
 
 # --- Autopilot / Guidance ---
 limits:

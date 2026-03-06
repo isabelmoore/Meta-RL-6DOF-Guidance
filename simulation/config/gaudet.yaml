@@ -19,6 +19,9 @@ geometry:
   wingspan_ft: 4.13
   wingarea_ft2: 0.81
   cg_x_in: 123.2
+  tail_fins: 4
+  tail_tip_ratio: 0.45
+  tail_sweep: 0.12
 
 # --- Aerodynamic Coefficients ---
 aero:
