@@ -30,9 +30,18 @@ class UAVConfig:
         self.name = data.get('name')
         self.type = data.get('type')
         self.fdm_xml = data.get('fdm_xml')
-        self.weight_lbs = data.get('weight_lbs')
-        self.length_in = data.get('length_in')
+        self.fdm_aircraft = data.get('fdm_aircraft', 'AIM')
         self.data_output_xml = data.get('data_output_xml', None)
+
+        # Physical properties (mass, geometry, aero, fcs)
+        self.mass = data.get('mass', {})
+        self.geometry = data.get('geometry', {})
+        self.aero = data.get('aero', {})
+        self.fcs = data.get('fcs', {})
+
+        # Backwards compat: expose weight_lbs and length_in at top level
+        self.weight_lbs = self.mass.get('weight_lbs', data.get('weight_lbs'))
+        self.length_in = self.geometry.get('length_in', data.get('length_in'))
         self.fg_sleep_time = data.get('fg_sleep_time', None)
         self.autopilot_type = data.get('autopilot_type', 'UAVPIDAutopilot')
         self.guidance_type = data.get('guidance_type', 'pro_nav')

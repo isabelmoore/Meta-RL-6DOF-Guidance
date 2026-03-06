@@ -11,8 +11,13 @@ class FDMObject(object):
 
         Args:
             conf: Vehicle configuration namespace with fdm_xml, data_output_xml,
-                  and optional weight_lbs / length_in fields.
+                  and mass/geometry/aero/fcs dicts for XML generation.
         """
+        if hasattr(conf, 'aero') and conf.aero:
+            from simulation.core.xml_generator import generate_aircraft_xml
+            aircraft_dir = f"jsbsim_data/aircraft/{getattr(conf, 'fdm_aircraft', 'AIM')}"
+            generate_aircraft_xml(conf, output_dir=aircraft_dir)
+
         self.fdm = jsbsim.FGFDMExec('jsbsim_data', None)
         script_path = conf.fdm_xml
         if script_path.startswith('jsbsim_data/'):
@@ -21,14 +26,11 @@ class FDMObject(object):
         if conf.data_output_xml is not None:
             self.fdm.set_output_directive(conf.data_output_xml)
 
-        if hasattr(conf, 'weight_lbs') and conf.weight_lbs is not None:
-             # Attempt to set weight. Note: complex aircraft models might override this with fuel/payload
-             self.fdm.set_property_value('inertia/weight-lbs', conf.weight_lbs)
-        
-        if hasattr(conf, 'length_in') and conf.length_in is not None:
-             # JSBSim metrics are usually read-only from XML, but we can store it or try to set it
-             # metrics/aero-rp-x-in might be settable but usually fixed.
-             pass
+        fcs = getattr(conf, 'fcs', {})
+        import math
+        self._ail_pos_max = math.radians(fcs.get('aileron_pos_max_deg', 0.1))
+        self._elev_pos_max = math.radians(fcs.get('elevator_pos_max_deg', 10.0))
+        self._rud_pos_max = math.radians(fcs.get('rudder_pos_max_deg', 10.0))
     
     def set_target(self, target):
         """
@@ -197,15 +199,15 @@ class FDMObject(object):
     # --- Current fin positions (read FCS integrator outputs, normalized to [-1, 1]) ---
     def get_aileron_pos(self):
         """Return aileron position normalized to [-1, 1]."""
-        return self.fdm['fcs/left-aileron-pos-rad'] / 0.00175  # ±0.1° → [-1, 1]
+        return self.fdm['fcs/left-aileron-pos-rad'] / self._ail_pos_max
 
     def get_elevator_pos(self):
         """Return elevator position normalized to [-1, 1]."""
-        return self.fdm['fcs/elevator-pos-rad'] / 0.175  # ±10° → [-1, 1]
+        return self.fdm['fcs/elevator-pos-rad'] / self._elev_pos_max
 
     def get_rudder_pos(self):
         """Return rudder position normalized to [-1, 1]."""
-        return self.fdm['fcs/rudder-pos-rad'] / 0.175  # ±10° → [-1, 1]
+        return self.fdm['fcs/rudder-pos-rad'] / self._rud_pos_max
 
     def print_status(self):
         """Print current time, position, altitude, Mach, and heading."""

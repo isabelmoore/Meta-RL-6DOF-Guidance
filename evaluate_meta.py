@@ -436,11 +436,15 @@ def make_vehicle_gif(traj, path, ep_num):
     times = np.array(traj["time"])
     reason = traj["reason"]
 
-    L, R_b, CG = 6.25, 0.155, 3.13
-    nose_len = 0.94
-    fin_root_x = CG - 5.5
-    fin_chord = L - 5.5
-    fin_span = 0.63
+    vg = traj.get("vehicle_geometry", {})
+    L = vg.get("length_m", 6.25)
+    R_b = vg.get("radius_m", 0.155)
+    CG = vg.get("cg_m", 3.13)
+    nose_len = vg.get("nose_frac", 0.15) * L
+    fin_span = vg.get("fin_span_m", 0.63)
+    fin_start = 0.88 * L
+    fin_chord = L - fin_start
+    fin_root_x = CG - fin_start
 
     total = len(pos_arr)
     n_frames = 120
@@ -895,11 +899,15 @@ def make_combined_gif(traj, path, ep_num):
     times = np.array(traj["time"])
     reason = traj["reason"]
 
-    L, R_b, CG = 6.25, 0.155, 3.13
-    nose_len = 0.94
-    fin_root_x = CG - 5.5
-    fin_chord = L - 5.5
-    fin_span = 0.63
+    vg = traj.get("vehicle_geometry", {})
+    L = vg.get("length_m", 6.25)
+    R_b = vg.get("radius_m", 0.155)
+    CG = vg.get("cg_m", 3.13)
+    nose_len = vg.get("nose_frac", 0.15) * L
+    fin_span = vg.get("fin_span_m", 0.63)
+    fin_start = 0.88 * L
+    fin_chord = L - fin_start
+    fin_root_x = CG - fin_start
 
     total = len(pos_arr)
     n_frames = 120
@@ -1261,6 +1269,15 @@ def _run_demo_episodes(model, scenario_name, n_episodes):
 
         traj["reason"] = info.get("termination_reason", "unknown")
         traj["final_range"] = info.get("range", float("inf"))
+        geom = getattr(env.UAV_config, 'geometry', None)
+        if geom:
+            traj["vehicle_geometry"] = {
+                "length_m": geom.get('length_in', 246.0) * 0.0254,
+                "radius_m": geom.get('diameter_ft', 1.02) * 0.3048 / 2,
+                "cg_m": geom.get('cg_x_in', 123.2) * 0.0254,
+                "nose_frac": 0.15,
+                "fin_span_m": geom.get('wingspan_ft', 4.13) * 0.3048 / 2,
+            }
         trajectories.append(traj)
 
     env.close()

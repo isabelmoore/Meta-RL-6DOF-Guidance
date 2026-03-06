@@ -1,39 +1,35 @@
-name: "AIM-7"
+name: "Gaudet"
 type: "UAV"
 fdm_xml: "jsbsim_data/scripts/AIM_test.xml"
 fdm_aircraft: "AIM"
 
-# --- Physical Properties ---
+# --- Physical Properties (Gaudet & Furfaro 2023) ---
+# "Integrated and Adaptive Guidance and Control for
+#  Endoatmospheric Missiles via Reinforcement Meta-Learning"
+# Mass: 455 kg, Length: 6.25 m, Diameter: 0.31 m
 mass:
-  weight_lbs: 510.0
-  ixx: 1.77
-  iyy: 190.7
-  izz: 190.7
+  weight_lbs: 1003.0
+  ixx: 8.06
+  iyy: 1094.0
+  izz: 1094.0
 
 geometry:
-  length_in: 144.0
-  diameter_ft: 0.667
-  wingspan_ft: 3.33
-  wingarea_ft2: 0.349
-  cg_x_in: 72.0
-  tail_fins: 4
-  wings:
-    count: 4
-    position_frac: 0.40
-    span_m: 0.51
-    chord_m: 0.60
-    sweep: 0.35
+  length_in: 246.0
+  diameter_ft: 1.02
+  wingspan_ft: 4.13
+  wingarea_ft2: 0.81
+  cg_x_in: 123.2
 
 # --- Aerodynamic Coefficients ---
 aero:
   ca_base: 0.35
   ca_induced: 4.0
   cn_alpha_body_wing: 6.0
-  cn_crossflow: 34.4
+  cn_crossflow: 38.5
   cn_alpha_tail: 4.0
   cn_delta_tail: -4.0
   cy_body_wing: -6.0
-  cy_crossflow: -34.4
+  cy_crossflow: -38.5
   cy_tail_beta: -4.0
   cy_rudder: 4.0
   cm_alpha: -20.4
