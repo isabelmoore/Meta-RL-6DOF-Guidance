@@ -72,9 +72,9 @@ def build_mesh(L, R_b, CG, nose_len, fin_span, fin_chord, fin_start, tail_fin_co
         wing_chord = wings.get('chord_m', 0.5)
         wing_sweep = wings.get('sweep', 0.3)
         wing_root_x = CG - wing_pos
-        # Offset wings 45° from tail fins
+        wing_offset = wings.get('offset_deg', 45)
         fins += _make_fin_set(wing_chord, wing_span, wing_sweep, 0.006,
-                              wing_root_x, count=wing_count, offset_deg=45)
+                              wing_root_x, count=wing_count, offset_deg=wing_offset)
 
     return body, fins
 

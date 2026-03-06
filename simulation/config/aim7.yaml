@@ -19,10 +19,11 @@ geometry:
   tail_fins: 4
   wings:
     count: 4
-    position_frac: 0.40
-    span_m: 0.51
-    chord_m: 0.60
-    sweep: 0.35
+    position_frac: 0.42
+    span_m: 0.41
+    chord_m: 0.50
+    sweep: 0.20
+    offset_deg: 0
 
 # --- Aerodynamic Coefficients ---
 aero:
