@@ -10,8 +10,8 @@
 [![SB3](https://img.shields.io/badge/RL-Stable--Baselines3-orange.svg)](https://stable-baselines3.readthedocs.io/)
 
 <p align="center">
-  <img src="demo/vehicle_closeup.gif" width="420"/>
-  <img src="demo/engagement_view.gif" width="420"/>
+  <img src="demo/vehicle_closeup.gif" width="500"/>
+  <img src="demo/engagement_view.gif" width="500"/>
 </p>
 
 </div>
@@ -47,8 +47,8 @@ Defined in `simulation/config/behaviors/`. Render with `python3 simulation/confi
 | `ballistic.yaml` | ballistic | 0° | 0 m | - |
 
 <p align="center">
-  <img src="demo/behavior_target.gif" width="420"/>
-  <img src="demo/trajectory_overview.gif" width="420"/>
+  <img src="demo/behavior_target.gif" width="500"/>
+  <img src="demo/trajectory_overview.gif" width="500"/>
 </p>
 
 ## Reward
