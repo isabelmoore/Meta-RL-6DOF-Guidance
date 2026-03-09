@@ -9,10 +9,10 @@
 [![JSBSim](https://img.shields.io/badge/sim-JSBSim-green.svg)](https://jsbsim.sourceforge.net/)
 [![SB3](https://img.shields.io/badge/RL-Stable--Baselines3-orange.svg)](https://stable-baselines3.readthedocs.io/)
 
-<table align="center"><tr>
-<td align="center"><img src="demo/vehicle_closeup.gif" width="420"/><br/><em>Chase camera with telemetry HUD</em></td>
-<td align="center"><img src="demo/engagement_view.gif" width="420"/><br/><em>Engagement view with UAV body</em></td>
-</tr></table>
+<p align="center">
+  <img src="demo/vehicle_closeup.gif" width="450"/>
+  <img src="demo/engagement_view.gif" width="450"/>
+</p>
 
 </div>
 
@@ -46,10 +46,10 @@ Defined in `simulation/config/behaviors/`. Render with `python3 simulation/confi
 | `straight.yaml` | straight | 0° | 0 m | - |
 | `ballistic.yaml` | ballistic | 0° | 0 m | - |
 
-<table align="center"><tr>
-<td align="center"><img src="demo/behavior_target.gif" width="420"/><br/><em>Target behavior patterns</em></td>
-<td align="center"><img src="demo/trajectory_overview.gif" width="420"/><br/><em>Full engagement trajectory</em></td>
-</tr></table>
+<p align="center">
+  <img src="demo/behavior_target.gif" width="450"/>
+  <img src="demo/trajectory_overview.gif" width="450"/>
+</p>
 
 ## Reward
 
